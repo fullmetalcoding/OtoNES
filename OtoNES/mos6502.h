@@ -181,6 +181,17 @@ private:
 	// stack operations
 	inline void StackPush(uint8_t byte);
 	inline uint8_t StackPop();
+
+
+	//Currently executing opcode and instruction...
+	uint8_t opcode;
+	Instr instr;
+	//Cycle timing helpers...
+	uint16_t cyclesToNextOpcode;
+	bool beginFetch;
+	bool irqNextFetch;
+	bool nmiNextFetch;
+
 	
 public:
 	
@@ -189,4 +200,8 @@ public:
 	void IRQ();
 	void Reset();
 	void Run(uint32_t n);
+	uint64_t GetCyclesElapsed()
+	{
+		return cycles;
+	}
 };

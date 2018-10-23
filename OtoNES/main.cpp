@@ -15,7 +15,7 @@
 
 
 //@TODO: make these configurable.
-//Write now we just have 2x scaling.
+//right now we just have 2x scaling.
 const int SCREEN_WIDTH = 512;
 const int SCREEN_HEIGHT = 512;
 int main(int argc, char** argv)
@@ -67,6 +67,8 @@ int main(int argc, char** argv)
 		<< "h: " << h << std::endl;
 
 	nes::RomLoader loader;
+	//@TODO: Need some kind of platform agnostic loader window here... Too bad SDL doesn't
+	//have something like that. :(
 	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
 	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");

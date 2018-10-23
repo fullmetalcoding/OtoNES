@@ -415,206 +415,266 @@ mos6502::mos6502(BusRead r, BusWrite w)
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_LSR;
+	instr.ticks = 6;
 	InstrTable[0x4E] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_LSR;
+	instr.ticks = 5;
 	InstrTable[0x46] = instr;
 	instr.addr = &mos6502::Addr_ACC;
 	instr.code = &mos6502::Op_LSR_ACC;
+	instr.ticks = 2;
 	InstrTable[0x4A] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_LSR;
+	instr.ticks = 6;
 	InstrTable[0x56] = instr;
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_LSR;
+	instr.ticks = 7;
 	InstrTable[0x5E] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_NOP;
+	instr.ticks = 2;
 	InstrTable[0xEA] = instr;
 	
 	instr.addr = &mos6502::Addr_IMM;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 3;
 	InstrTable[0x09] = instr;
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 4;
 	InstrTable[0x0D] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 3;
 	InstrTable[0x05] = instr;
 	instr.addr = &mos6502::Addr_INX;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 6;
 	InstrTable[0x01] = instr;
 	instr.addr = &mos6502::Addr_INY;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 5;
 	InstrTable[0x11] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 4;
 	InstrTable[0x15] = instr;	
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 4;
 	InstrTable[0x1D] = instr;
 	instr.addr = &mos6502::Addr_ABY;
 	instr.code = &mos6502::Op_ORA;
+	instr.ticks = 4;
 	InstrTable[0x19] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_PHA;
+	instr.ticks = 3;
 	InstrTable[0x48] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_PHP;
+	instr.ticks = 3;
 	InstrTable[0x08] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_PLA;
+	instr.ticks = 4;
 	InstrTable[0x68] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_PLP;
+	instr.ticks = 4;
 	InstrTable[0x28] = instr;
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_ROL;
+	instr.ticks = 6;
 	InstrTable[0x2E] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_ROL;
+	instr.ticks = 5;
 	InstrTable[0x26] = instr;
 	instr.addr = &mos6502::Addr_ACC;
 	instr.code = &mos6502::Op_ROL_ACC;
+	instr.ticks = 2;
 	InstrTable[0x2A] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_ROL;
+	instr.ticks = 6;
 	InstrTable[0x36] = instr;
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_ROL;
+	instr.ticks = 7;
 	InstrTable[0x3E] = instr;
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_ROR;
+	instr.ticks = 6;
 	InstrTable[0x6E] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_ROR;
+	instr.ticks = 5;
 	InstrTable[0x66] = instr;
 	instr.addr = &mos6502::Addr_ACC;
 	instr.code = &mos6502::Op_ROR_ACC;
+	instr.ticks = 2;
 	InstrTable[0x6A] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_ROR;
+	instr.ticks = 6;
 	InstrTable[0x76] = instr;
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_ROR;
+	instr.ticks = 7;
 	InstrTable[0x7E] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_RTI;
+	instr.ticks = 6;
 	InstrTable[0x40] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_RTS;
+	instr.ticks = 6;
 	InstrTable[0x60] = instr;
 	
 	instr.addr = &mos6502::Addr_IMM;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 3;
 	InstrTable[0xE9] = instr;
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 4;
 	InstrTable[0xED] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 3;
 	InstrTable[0xE5] = instr;
 	instr.addr = &mos6502::Addr_INX;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 6;
 	InstrTable[0xE1] = instr;
 	instr.addr = &mos6502::Addr_INY;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 5;
 	InstrTable[0xF1] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 4;
 	InstrTable[0xF5] = instr;
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 4;
 	InstrTable[0xFD] = instr;
 	instr.addr = &mos6502::Addr_ABY;
 	instr.code = &mos6502::Op_SBC;
+	instr.ticks = 4;
 	InstrTable[0xF9] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_SEC;
+	instr.ticks = 2;
 	InstrTable[0x38] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_SED;
+	instr.ticks = 2;
 	InstrTable[0xF8] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_SEI;
+	instr.ticks = 2;
 	InstrTable[0x78] = instr;
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 4;
 	InstrTable[0x8D] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 2;
 	InstrTable[0x85] = instr;
 	instr.addr = &mos6502::Addr_INX;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 6;
 	InstrTable[0x81] = instr;
 	instr.addr = &mos6502::Addr_INY;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 6;
 	InstrTable[0x91] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 4;
 	InstrTable[0x95] = instr;
 	instr.addr = &mos6502::Addr_ABX;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 5;
 	InstrTable[0x9D] = instr;
 	instr.addr = &mos6502::Addr_ABY;
 	instr.code = &mos6502::Op_STA;
+	instr.ticks = 5;
 	InstrTable[0x99] = instr;
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_STX;
+	instr.ticks = 4;
 	InstrTable[0x8E] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_STX;
+	instr.ticks = 2;
 	InstrTable[0x86] = instr;
 	instr.addr = &mos6502::Addr_ZEY;
 	instr.code = &mos6502::Op_STX;
+	instr.ticks = 4;
 	InstrTable[0x96] = instr;
 	
 	instr.addr = &mos6502::Addr_ABS;
 	instr.code = &mos6502::Op_STY;
+	instr.ticks = 4;
 	InstrTable[0x8C] = instr;
 	instr.addr = &mos6502::Addr_ZER;
 	instr.code = &mos6502::Op_STY;
+	instr.ticks = 2;
 	InstrTable[0x84] = instr;
 	instr.addr = &mos6502::Addr_ZEX;
 	instr.code = &mos6502::Op_STY;
+	instr.ticks = 4;
 	InstrTable[0x94] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TAX;
+	instr.ticks = 2;
 	InstrTable[0xAA] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TAY;
+	instr.ticks = 2;
 	InstrTable[0xA8] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TSX;
+	instr.ticks = 2;
 	InstrTable[0xBA] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TXA;
+	instr.ticks = 2;
 	InstrTable[0x8A] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TXS;
+	instr.ticks = 2;
 	InstrTable[0x9A] = instr;
 	
 	instr.addr = &mos6502::Addr_IMP;
 	instr.code = &mos6502::Op_TYA;
+	instr.ticks = 2;
 	InstrTable[0x98] = instr;
 	
 	Reset();
@@ -769,6 +829,10 @@ void mos6502::Reset()
 	cycles = 6; // according to the datasheet, the reset routine takes 6 clock cycles
 
 	illegalOpcode = false;
+	beginFetch = true;
+	cyclesToNextOpcode = 0; //Doesn't really matter; this gets overwritten immediately.
+	nmiNextFetch = false;
+	irqNextFetch = false;
 	
 	return;
 }
@@ -789,6 +853,14 @@ uint8_t mos6502::StackPop()
 
 void mos6502::IRQ()
 {
+	//IRQ should happen after the current 
+	//instruction completes...
+	if (!irqNextFetch)
+	{
+		irqNextFetch = true;
+		return;
+	}
+	irqNextFetch = false;
 	if(!IF_INTERRUPT())
 	{
 		SET_BREAK(0);
@@ -803,6 +875,14 @@ void mos6502::IRQ()
 
 void mos6502::NMI()
 {
+	//NMI should happen after the current 
+	//instruction completes... 
+	if (!nmiNextFetch)
+	{
+		nmiNextFetch = true;
+		return;
+	}
+	nmiNextFetch = false;
 	SET_BREAK(0);
 	StackPush((pc >> 8) & 0xFF);
 	StackPush(pc & 0xFF);
@@ -811,24 +891,60 @@ void mos6502::NMI()
 	pc = (Read(nmiVectorH) << 8) + Read(nmiVectorL);
 	return;
 }
+/*
+	Previously, the 6502 core executed on a per-instruction, not per-cycle basis.
+	This made proper cycle timing essentially impossible, since the 6502 does not
+	execute one instruction per clock cycle. 
+	
+	The new approach has somewhat better timing by storing the next ("currently") executing
+	opcode and instruction and only allowing the execution to occur after the appropriate
+	number of cycles have elapsed. This makes the assumption that the results of the
+	current instruction are only visible at the end, and that the emulating host can
+	execute the instruction in a fast enough manner that it won't matter from a timing
+	standpoint. 
 
+	This is mostly correct, as a modern CPU should be able to run at multiple- GHz, trouncing
+	the 6502's 1.7 MHz clock speed, but it can't necessarily be guaranteed that intermediate
+	results wouldn't have had measurable effects on the original 6502. So this is a compromise
+	between speed, complexity, and accuracy.
+*/
 void mos6502::Run(uint32_t n)
 {
 	uint32_t start = cycles;
-	uint8_t opcode;
-	Instr instr;
 
-	while(start + n > cycles && !illegalOpcode)
+	while (start + n > cycles && !illegalOpcode)
 	{
-		// fetch
-		opcode = Read(pc++);
-		
-		// decode
-		instr = InstrTable[opcode];
-		
-		// execute
-		Exec(instr);
-		
+		if (beginFetch)
+		{
+			// fetch
+			opcode = Read(pc++);
+
+			// decode
+			instr = InstrTable[opcode];
+			cyclesToNextOpcode = instr.ticks;
+			beginFetch = false;
+		}			
+		if(cyclesToNextOpcode == 0)
+		{
+			// execute
+			Exec(instr);
+			beginFetch = true;
+			//Last thing to do is check that we have an NMI or IRQ pending
+			//If so, initiate the NMI.
+			//Since NMI takes priority, we check it last, as it will
+			//overwrite the IRQ PC.
+			//@CHECKME: Should the IRQ flag be cleared on an NMI or 
+			//stay high, allowing the IRQ to occur once the NMI completes?
+			if (irqNextFetch)
+			{
+				IRQ();
+			}
+			if (nmiNextFetch)
+			{
+				NMI();
+			}
+		}
+		cyclesToNextOpcode--;
 		cycles++;
 	}
 }
