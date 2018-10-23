@@ -13,8 +13,11 @@ namespace nes
 		uint8_t m_registers[8];
 		signed int m_scanlineCounter;
 		int m_dotCounter; //Current pixel in the current scanline.
+
+		//Internal memory
 		uint8_t m_oam[0xFF];
-		std::shared_ptr<uint8_t[]> m_nameTable;
+		std::shared_ptr<uint8_t[]> m_nameTable; //0x2000-0x3EFF (size 0x0F00)
+		std::shared_ptr<uint8_t[]> m_paletteRAM; //0x3F00-0x3FFF (size 0x00E0)
 		bool m_mirroring;
 
 		//Rendering surfaces...

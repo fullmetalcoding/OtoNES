@@ -47,14 +47,17 @@ namespace nes
 			//Now add to the nametableAddr to handle mirroring.
 			if (nameTable > 0)
 				nametableAddr += 0x400;
-			std::cout << "N" << std::hex << nametableAddr << " | " << (int)byte << std::dec << std::endl;
+			//std::cout << "N" << std::hex << nametableAddr << " | " << (int)byte << std::dec << std::endl;
 			//Update memory
 			m_nameTable[nametableAddr] = byte;
 			//Increment cpuAccessPTR
 		}
-		else
+		else if((m_cpuAccessPtr >= 0x3F00) && (m_cpuAccessPtr < 0x4000))
 		{
-			std::cout << "X" << std::hex << m_cpuAccessPtr << std::dec << std::endl;
+			//Palette RAM write. With mirroring we only care about the lower 5 bits.
+			uint16_t paletteIdx = m_cpuAccessPtr & 0x1F;
+			//std::cout << "P: " << std::hex << paletteIdx << std::dec << std::endl;
+			m_paletteRAM[paletteIdx] = byte;
 		}
 		m_cpuAccessPtr +=  (readbit(m_registers[0], 2) ? 32 : 1);
 	}
@@ -231,6 +234,8 @@ namespace nes
 		m_screen = m_screenBuf0;
 		m_backBuffer = m_screenBuf1;
 		m_nameTable.reset(new uint8_t[0x800]);
+		m_paletteRAM.reset(new uint8_t[0x20]);
+
 	}
 	void PPU::__debugFakeSprite0Hit()
 	{
@@ -322,7 +327,8 @@ namespace nes
 			            | (readbit(m_attributeShiftRegs[1], fineScroll) << 2)
 						| (readbit(m_bgShiftRegs[1], fineScroll) << 1) 
 						| readbit(m_bgShiftRegs[0], fineScroll);
-		RGB pixelColor = nes_palette[colorIndex];
+		//@TODO: index palette here.
+		RGB pixelColor = nes_palette[m_paletteRAM[colorIndex]];
 
 		m_backBuffer[3 * ((m_scanlineCounter * 256) + m_dotCounter)] = pixelColor.r;
 		m_backBuffer[3 * ((m_scanlineCounter * 256) + m_dotCounter) + 1] = pixelColor.g;
