@@ -26,11 +26,12 @@ namespace nes
 
 
 		bool m_cpuAccessLatch;
-		int m_shifterCount;
 
 		uint16_t m_bgShiftRegs[2];
 		uint8_t m_attributeShiftRegs[2];
 		uint16_t m_cpuAccessPtr;
+		uint8_t hScroll; //Horizontal scroll register
+		uint8_t vScroll; //Vertical scroll register
 		//Internal PPU functions...
 		void renderNextScanline();
 		void writeVRAM(uint8_t byte);
