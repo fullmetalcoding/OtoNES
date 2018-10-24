@@ -2,6 +2,9 @@
 #include <iostream>
 #include "nesPalette.h"
 #include "bitmanip.h"
+#include <fstream>
+#include <bitset>
+
 namespace nes
 {
 	inline uint16_t getBaseNametable(int n)
@@ -56,7 +59,7 @@ namespace nes
 		{
 			//Palette RAM write. With mirroring we only care about the lower 5 bits.
 			uint16_t paletteIdx = m_cpuAccessPtr & 0x1F;
-			//std::cout << "P: " << std::hex << paletteIdx << std::dec << std::endl;
+		//	std::cout << "P: " << std::hex << paletteIdx << " | " << (int) byte << std::dec << std::endl;
 			m_paletteRAM[paletteIdx] = byte;
 		}
 		m_cpuAccessPtr +=  (readbit(m_registers[0], 2) ? 32 : 1);
@@ -242,8 +245,89 @@ namespace nes
 		writebit(m_registers[2], 1, 6);
 
 	}
+	void PPU::debugDumpPatternTable(std::string filename)
+	{
+		std::ofstream debugDumpBin(filename, std::ios::binary);
+		for (size_t line = 0; line < 128; line++)
+		{
+			for (size_t xPix = 0; xPix < 256; xPix++)
+			{
+				
+				    uint16_t side = xPix / 128;
+					uint16_t col = (xPix / 8) % 8 ;
+					uint16_t row = line / 8 ;
+					uint16_t fineY = line % 8;
+					uint16_t pixel = 7-(xPix % 8);
+					uint16_t baseAddr = (side ? 0x1000 : 0x0000);
+
+					if (line == 4 && xPix == 129) std::cout << "DERP: " << std::hex << baseAddr << std::dec << std::endl;
+				    uint16_t patternAddr = baseAddr | (row << 8) | (col << 4) | (fineY & 0x0007);
+					uint16_t patternAddr2 = patternAddr | 0x0008;
+					uint8_t tileByte = m_read(patternAddr);
+					uint8_t tileByte2 = m_read(patternAddr2);
+					uint8_t colorz = (readbit(tileByte2, pixel) << 1) | readbit(tileByte, pixel);
+					debugDumpBin << (uint8_t)(colorz  * 85);
+				
+			}
+		}
+		std::cout << "dumped pattern table." << std::endl;
+		debugDumpBin.close();
+	}
+	void PPU::debugDumpNameTable(std::string filename)
+	{
+		std::ofstream debugDump(filename + ".txt");
+		std::ofstream debugDumpBin(filename + ".raw", std::ios::binary);
+		//uint8_t base = getNameTable(getBaseNametable(m_registers[0] & 0x3));
+		//std::cout << "BASE: " << std::hex << (int)getBaseNametable(m_registers[0] & 0x3) << " : " << (int) base << std::dec << std::endl;
+		for (size_t scanline = 0; scanline < 240; scanline++)
+		{
+			size_t tileY = scanline / 8;
+			int line = tileY % 8;
+			for (size_t tileX = 0; tileX < 64; tileX++)
+			{
+				int pitch;
+				if (m_mirroring)
+				{
+					tileY = tileY % 30;
+					pitch = 64;
+				}
+				else
+				{
+					tileX = tileX % 32;
+					pitch = 64;
+				}
+				
+				//uint16_t adjust = (base ? 0x0400 : 0x0000);
+
+				uint16_t tileAddr = (tileY * pitch) + tileX;
+				uint16_t adjust = 0x2400 + tileAddr;
+				int nt = getNameTable(adjust);
+				uint8_t tileRef = m_nameTable[tileAddr + (nt * 0x400)];
+				//uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) + tileRef * 16;
+				uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) | (tileRef << 4)  | (line & 0x0007);
+				uint16_t patternAddr2 = patternAddr | 0x0008;
+				uint8_t tileByte = m_read(patternAddr);
+				uint8_t tileByte2 = m_read(patternAddr2);
+					//debugDump << "| 0x" << std::hex << (int)patternAddr << std::dec << " ";
+					std::bitset<8> p(tileByte);
+					debugDump << p;
+					for (size_t i = 0; i < 8; i++)
+					{
+						uint8_t col;
+						col = ((readbit(tileByte2, i) << 1 )| readbit(tileByte, i)) * 85;
+						debugDumpBin << col;
+					}
+			}
+			debugDump << std::endl;
+		}
+		std::cout << "Dumped nametable." << std::endl;
+		debugDump.close();
+		debugDumpBin.close();
+	}
 	void PPU::advanceCycles(int n)
 	{
+		uint8_t base = getNameTable(getBaseNametable(m_registers[0] & 0x3));
+		uint16_t adjust = (base ? 0x0400 : 0x0000);
 		for (size_t i = 0; i < n; i++)
 		{
 
@@ -252,6 +336,7 @@ namespace nes
 			//If we reach the end of the scanline, update the scanline.
 			if (m_dotCounter == 255)
 			{
+
 				//m_dotCounter = 0;
 				renderNextScanline();
 			}
@@ -262,18 +347,19 @@ namespace nes
 			//If we're between 256 and 340 we're in "HBlank"
 			//No pixels are rendered, but memory accesses still occur like
 			//they are...
-			
+
+
 			if ((m_scanlineCounter >= 0) && (m_scanlineCounter < 241))
 			{
 				//std::cout << "." << m_dotCounter << "|" << std::endl;
 				if ((m_dotCounter % 8) == 0)
 				{
 					//Dot count = X
-					int tileX = ((m_dotCounter +hScroll) / 8) + 1;
+					int tileX = ((m_dotCounter +hScroll) / 8);
 
 					//Line count = Y
-					int tileY = ((m_scanlineCounter+vScroll) / 8) + 1;
-
+					int tileY = ((m_scanlineCounter+vScroll) / 8);
+					int lineOffset = tileY % 8;
 					//Adjust for mirroring. in Horizontal X gets % 32
 					//in Vertical, Y gets  % 30
 					int pitch;
@@ -289,15 +375,17 @@ namespace nes
 					}
 
 			
-					uint8_t base = getNameTable(getBaseNametable(m_registers[0] & 0x3));
-					uint16_t adjust = (base ? 0x0400 : 0x0000);
 					uint16_t tileAddr = adjust + (tileY * pitch) + tileX;
 					//std::cout << std::hex << tileAddr << std::dec << std::endl;
 					uint8_t tileRef = m_nameTable[tileAddr];
-					//std::cout << (int)tileRef << std::endl;
+					//std::cout << "X: " << tileX << " Y: " << tileY << std::endl;
+					//std::cout << "!" << std::hex << (int)tileRef << std::dec << std::endl;
 				
-					uint8_t tileByte =  m_read((readbit(m_registers[0], 4) ? 0x1000 : 0x0000) + tileRef*16);
-					uint8_t tileByte2 = m_read((readbit(m_registers[0], 4) ? 0x1000 : 0x0000) + tileRef*16 + 8);
+					//uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) + (tileRef) *16;
+					uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
+					//std::cout << std::hex << patternAddr << std::dec << std::endl;
+					uint8_t tileByte =  m_read(patternAddr );
+					uint8_t tileByte2 = m_read(patternAddr  + 8);
 					m_bgShiftRegs[0] = (m_bgShiftRegs[0] & 0x00FF) | (tileByte << 8);
 					m_bgShiftRegs[1] = (m_bgShiftRegs[1] & 0x00FF) | (tileByte << 8);
 
@@ -326,9 +414,16 @@ namespace nes
 		int colorIndex =  (readbit(m_attributeShiftRegs[1], fineScroll) << 3)
 			            | (readbit(m_attributeShiftRegs[1], fineScroll) << 2)
 						| (readbit(m_bgShiftRegs[1], fineScroll) << 1) 
-						| readbit(m_bgShiftRegs[0], fineScroll);
-		//@TODO: index palette here.
-		RGB pixelColor = nes_palette[m_paletteRAM[colorIndex]];
+						| readbit(m_bgShiftRegs[0], fineScroll);	
+		RGB pixelColor;
+		if (colorIndex != 0x00)
+		{
+			pixelColor = nes_palette[m_paletteRAM[colorIndex]];
+		}
+		else
+		{
+			pixelColor = { 255,255,255 };
+		}
 
 		m_backBuffer[3 * ((m_scanlineCounter * 256) + m_dotCounter)] = pixelColor.r;
 		m_backBuffer[3 * ((m_scanlineCounter * 256) + m_dotCounter) + 1] = pixelColor.g;

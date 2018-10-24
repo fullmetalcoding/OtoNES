@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 	//have something like that. :(
 	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
 	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
-//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
+	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
 
 	std::shared_ptr<nes::NesMachine> machine;
 	if (!rom)
@@ -168,6 +168,21 @@ int main(int argc, char** argv)
 					{
 						machine->__debugFakeSprite0Hit();
 					}
+					break;
+				case 'k':
+				case 'K':
+					if (machine)
+					{
+						machine->getPPU()->debugDumpNameTable("c:\\codestuffs\\ntdump");
+					}
+					break;
+				case 'p':
+				case 'P':
+					if (machine)
+					{
+						machine->getPPU()->debugDumpPatternTable("c:\\codestuffs\\ptdump.raw");
+					}
+					break;
 
 				default:
 					break;

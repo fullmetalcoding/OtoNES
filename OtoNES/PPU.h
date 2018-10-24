@@ -65,6 +65,10 @@ namespace nes
 			
 		void __debugFakeSprite0Hit();
 
+		void debugDumpPatternTable(std::string filename);
+
+		void debugDumpNameTable(std::string filename);
+
 		std::shared_ptr<uint8_t[]> getScreen()
 		{
 			return m_screen;
