@@ -176,7 +176,7 @@ namespace nes
 	}
 	void PPU::renderNextScanline()
 	{
-		writebit(m_registers[2], 0, 6);
+		//writebit(m_registers[2], 0, 6);
 		m_scanlineCounter++;
 	
 		if (m_scanlineCounter == 241)
@@ -241,16 +241,20 @@ namespace nes
 				m_spriteScan[m_sprCount * 4 + 2] = m_oam[i * 4 + 2];
 				m_spriteScan[m_sprCount * 4 + 3] = m_oam[i * 4 + 3];
 				uint8_t lineOffset = m_scanlineCounter - spriteScanline;
+				if (readbit(m_spriteScan[m_sprCount * 4 + 2], 7))
+				{
+					lineOffset = 7 - lineOffset;
+				}
 				//Get the sprite's pattern from memory...
 				uint8_t tileRef = m_spriteScan[m_sprCount * 4 + 1];
 				uint16_t patternAddr = (readbit(m_registers[0], 3) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
 				uint16_t patternAddr2 = patternAddr | 0x0008;
-				m_spriteShiftHi[m_sprCount] = (m_read(patternAddr));
-				m_spriteShiftLo[m_sprCount] = (m_read(patternAddr2));
+				m_spriteShiftHi[m_sprCount] = reverseBits(m_read(patternAddr));
+				m_spriteShiftLo[m_sprCount] = reverseBits(m_read(patternAddr2));
 				if (readbit(m_spriteScan[m_sprCount * 4 + 2], 6))
 				{
-					reverseBits(m_spriteShiftHi[m_sprCount]);
-					reverseBits(m_spriteShiftLo[m_sprCount]);
+					m_spriteShiftHi[m_sprCount] = reverseBits(m_spriteShiftHi[m_sprCount]);
+					m_spriteShiftLo[m_sprCount] = reverseBits(m_spriteShiftLo[m_sprCount]);
 
 				}
 				m_spriteX[m_sprCount] = m_spriteScan[m_sprCount * 4 + 3];
@@ -375,17 +379,12 @@ namespace nes
 		for (size_t i = 0; i < n; i++)
 		{
 
-			//	std::cout << m_dotCounter << std::endl;
+
 				//Each PPU cycle renders one pixel to the buffer
 				//If we reach the end of the scanline, update the scanline.
-			if (m_dotCounter == 255)
-			{
-
-				//m_dotCounter = 0;
-				renderNextScanline();
-			}
 			if (m_dotCounter > 340)
 			{
+				renderNextScanline();
 				m_dotCounter = 0;
 			}
 			//If we're between 256 and 340 we're in "HBlank"
@@ -500,13 +499,16 @@ namespace nes
 		int finalColorIndex = 0x00;
 		if ((!sprPri && (sprColorIndex != 0)) || (bgColorIndex == 0))
 		{
-			finalColorIndex = sprColorIndex;
 			writebit(m_registers[2], 1, 6);
+			finalColorIndex = sprColorIndex;
+	
 		}
 		else
 		{
 			finalColorIndex = bgColorIndex;
 		}
+	
+		//finalColorIndex = sprColorIndex;
 		RGB pixelColor;
 		pixelColor = nes_palette[m_paletteRAM[finalColorIndex]];
 

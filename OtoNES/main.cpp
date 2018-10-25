@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 	//have something like that. :(
 	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("1942.nes");
-	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
 	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
 
 	std::shared_ptr<nes::NesMachine> machine;
