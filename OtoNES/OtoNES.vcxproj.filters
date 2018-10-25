@@ -21,9 +21,6 @@
     <ClInclude Include="NesMachine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DebugPlaceholders.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IMapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>

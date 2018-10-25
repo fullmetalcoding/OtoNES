@@ -15,7 +15,7 @@ namespace nes
 		int m_dotCounter; //Current pixel in the current scanline.
 
 		//Internal memory
-		uint8_t m_oam[0xFF];
+
 		std::shared_ptr<uint8_t[]> m_nameTable; //0x2000-0x3EFF (size 0x0F00)
 		std::shared_ptr<uint8_t[]> m_paletteRAM; //0x3F00-0x3FFF (size 0x00E0)
 		bool m_mirroring;
@@ -27,16 +27,26 @@ namespace nes
 		std::shared_ptr<uint8_t[]> m_backBuffer;
 		std::shared_ptr<uint8_t[]> m_screen;
 
+		//Sprites...
+		uint8_t m_oam[0xFF];
+		uint8_t m_spriteScan[32];
+		int m_spriteX[8]; //Sprite X countdown for current scanline.
+		uint8_t m_spriteShiftHi[8]; //Sprite bitmap shift reg high bit
+		uint8_t m_spriteShiftLo[8]; //Sprite bitmap shift reg lo bit
+		uint8_t m_spriteAttrib[8]; //Sprite attribute number
+		unsigned int m_sprCount; //Count of sprites on current scanline.
+		bool m_spriteActive[8];
 
 		bool m_cpuAccessLatch;
-
+		
 		uint16_t m_bgShiftRegs[2];
-		uint8_t m_attributeShiftRegs[2];
+		uint8_t m_bgAttr;
 		uint16_t m_cpuAccessPtr;
 		uint8_t hScroll; //Horizontal scroll register
 		uint8_t vScroll; //Vertical scroll register
 		//Internal PPU functions...
 		void renderNextScanline();
+		void loadSpriteScan();
 		void writeVRAM(uint8_t byte);
 		uint8_t readVRAM();
 

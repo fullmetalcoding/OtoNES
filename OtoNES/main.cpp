@@ -70,6 +70,7 @@ int main(int argc, char** argv)
 	//@TODO: Need some kind of platform agnostic loader window here... Too bad SDL doesn't
 	//have something like that. :(
 	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("1942.nes");
 	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
 	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
 
@@ -106,6 +107,7 @@ int main(int argc, char** argv)
 			std::shared_ptr<uint8_t[]> screen = ppu->getScreen();
 			void* screenPix;
 			int screenPitch;
+			
 			SDL_LockTexture(screenTexture, NULL, &screenPix, &screenPitch);
 			uint8_t* pointerHATE = (uint8_t*)screenPix;
 			//memcpy(screenPix, screen.get(), 256 * 3 * 256);
@@ -123,6 +125,7 @@ int main(int argc, char** argv)
 		
 			//Update the surface
 			SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
+			
 			SDL_RenderPresent(renderer);
 		}
 		if (SDL_TICKS_PASSED(SDL_GetTicks(), nextTicks))
