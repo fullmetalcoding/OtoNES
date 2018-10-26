@@ -6,6 +6,19 @@
 #include <bitset>
 
 
+
+inline bool isAttrSpace(uint16_t addr)
+{
+	//This is to check if our tile address is in attribute table space
+	//if so, we want to add 0x40 to push us into the next name table.
+	//Need a faster, cleaner, cleverer way to do this.
+	uint16_t uglyHack = addr - 0x2000;
+	bool inAttrSpace = (uglyHack >= 0x03C0 && uglyHack < 0x0400) ||
+		(uglyHack >= 0x07C0 && uglyHack < 0x0800) ||
+		(uglyHack >= 0x0BC0 && uglyHack < 0x0C00);//+ ||
+												 //	(uglyHack > 0x0FC0 && uglyHack < 0x1000);//Shouldn't need since we'd be off the end of the nametable...
+	return inAttrSpace;
+}
 namespace nes
 {
 	inline uint16_t getBaseNametable(int n)
@@ -219,10 +232,7 @@ namespace nes
 		//Find the first 8 sprites on the current scanline
 		for (size_t i = 0; i < 8; i++)
 		{
-			m_spriteScan[i * 8] = 0;
-			m_spriteScan[i * 8 + 1] = 0;
-			m_spriteScan[i * 8 + 2] = 0;
-			m_spriteScan[i * 8 + 3] = 0;
+			m_spriteScanIdx[i] = 0;
 			m_spriteShiftHi[i] = 0;
 			m_spriteShiftLo[i] = 0;
 			m_spriteX[i] = 0;
@@ -236,28 +246,26 @@ namespace nes
 			if ((m_scanlineCounter >= spriteScanline) && (m_scanlineCounter < (spriteScanline + 8)))
 			{
 				//Found one.
-				m_spriteScan[m_sprCount * 4] = m_oam[i * 4];
-				m_spriteScan[m_sprCount * 4 + 1] = m_oam[i * 4 + 1];
-				m_spriteScan[m_sprCount * 4 + 2] = m_oam[i * 4 + 2];
-				m_spriteScan[m_sprCount * 4 + 3] = m_oam[i * 4 + 3];
+				m_spriteScanIdx[m_sprCount] = i;
+
 				uint8_t lineOffset = m_scanlineCounter - spriteScanline;
-				if (readbit(m_spriteScan[m_sprCount * 4 + 2], 7))
+				if (readbit(m_oam[i * 4 + 2], 7))
 				{
 					lineOffset = 7 - lineOffset;
 				}
 				//Get the sprite's pattern from memory...
-				uint8_t tileRef = m_spriteScan[m_sprCount * 4 + 1];
+				uint8_t tileRef = m_oam[i * 4 + 1];
 				uint16_t patternAddr = (readbit(m_registers[0], 3) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
 				uint16_t patternAddr2 = patternAddr | 0x0008;
 				m_spriteShiftHi[m_sprCount] = reverseBits(m_read(patternAddr));
 				m_spriteShiftLo[m_sprCount] = reverseBits(m_read(patternAddr2));
-				if (readbit(m_spriteScan[m_sprCount * 4 + 2], 6))
+				if (readbit(m_oam[i * 4 + 2], 6))
 				{
 					m_spriteShiftHi[m_sprCount] = reverseBits(m_spriteShiftHi[m_sprCount]);
 					m_spriteShiftLo[m_sprCount] = reverseBits(m_spriteShiftLo[m_sprCount]);
 
 				}
-				m_spriteX[m_sprCount] = m_spriteScan[m_sprCount * 4 + 3];
+				m_spriteX[m_sprCount] = m_oam[i * 4 + 3];
 				m_spriteActive[m_sprCount] = 0;
 				m_sprCount++;
 			}
@@ -325,8 +333,22 @@ namespace nes
 		std::cout << "dumped pattern table." << std::endl;
 		debugDumpBin.close();
 	}
+	void PPU::debugDumpRawScreen(std::string filename)
+	{
+		std::ofstream debugDumpBin(filename, std::ios::binary);
+		for (size_t i = 0; i < (256 * 256); i++)
+		{
+			debugDumpBin << m_screen[i * 3]
+				<< m_screen[i * 3 + 1]
+				<< m_screen[i * 3 + 2];
+					
+		}
+		debugDumpBin.close();
+	}
 	void PPU::debugDumpNameTable(std::string filename)
 	{
+		uint16_t base = getBaseNametable(m_registers[0] & 0x3);
+		uint16_t nextTableBase = getBaseNametable(((m_registers[0] & 0x3) + 1) % 4);
 		std::ofstream debugDumpBin(filename + ".raw", std::ios::binary);
 		//uint8_t base = getNameTable(getBaseNametable(m_registers[0] & 0x3));
 		//std::cout << "BASE: " << std::hex << (int)getBaseNametable(m_registers[0] & 0x3) << " : " << (int) base << std::dec << std::endl;
@@ -334,24 +356,28 @@ namespace nes
 		{
 			size_t tileY = scanline / 8;
 			int line = scanline % 8;
-			for (size_t tileX = 0; tileX < 32; tileX++)
+			for (size_t tileX = 0; tileX < 64; tileX++)
 			{
+				
 				int pitch;
 				if (m_mirroring)
 				{
 					tileY = tileY % 30;
 					pitch = 32;
+					
 				}
 				else
 				{
 					tileX = tileX % 32;
 					pitch = 64;
-				}
 				
-				//uint16_t adjust = (base ? 0x0400 : 0x0000);
+				}
+				int scrolledX = 0 + tileX;
+				//@TODO: Find and kill this hack.
+				uint16_t yAdjustHack = tileY - (scrolledX > 31 ? 1 : 0);
+				uint16_t tileAddr = (yAdjustHack * pitch) + scrolledX;
+				uint16_t adjust = ((scrolledX > 31) ? nextTableBase : base) + tileAddr;
 
-				uint16_t tileAddr = (tileY * pitch) + tileX;
-				uint16_t adjust = 0x2400 + tileAddr;
 				int nt = getNameTable(adjust);
 				uint8_t tileRef = m_nameTable[tileAddr + (nt * 0x400)];
 				uint8_t row = (tileRef & 0xF0) >> 4;
@@ -374,8 +400,8 @@ namespace nes
 	}
 	void PPU::advanceCycles(int n)
 	{
-		uint8_t base = getNameTable(getBaseNametable(m_registers[0] & 0x3));
-		uint16_t adjust = (base ? 0x0400 : 0x0000);
+		uint16_t base = getBaseNametable(m_registers[0] & 0x3);
+		uint16_t nextTableBase = getBaseNametable(((m_registers[0] & 0x3) + 1) % 4);
 		for (size_t i = 0; i < n; i++)
 		{
 
@@ -398,7 +424,9 @@ namespace nes
 				if ((m_dotCounter % 8) == 0)
 				{
 					//Dot count = X
-					int tileX = ((m_dotCounter + hScroll) / 8);
+					int tileX = ((m_dotCounter + (hScroll +8)) / 8);
+
+					
 
 					//Line count = Y
 					int tileY = ((m_scanlineCounter + vScroll) / 8);
@@ -409,19 +437,26 @@ namespace nes
 					if (m_mirroring)
 					{
 						tileY = tileY % 30;
+
 						pitch = 32;
+					
 					}
 					else
 					{
-						tileX = tileX % 32;
+						tileX = (tileX % 32);
 						pitch = 64;
 					}
 
 
-					uint16_t tileAddr = adjust + (tileY * pitch) + tileX;
-					uint8_t tileRef = m_nameTable[tileAddr];
+					uint16_t yAdjustHack = tileY - (tileX > 31 ? 1 : 0);
+					uint16_t tileAddr = (yAdjustHack * pitch) + tileX;
+					uint16_t adjust = ((tileX > 31) ? nextTableBase : base) + tileAddr;
+
+					int nt = getNameTable(adjust);
+					uint8_t tileRef = m_nameTable[tileAddr + (nt * 0x400)];
 
 					uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
+					
 
 					uint8_t tileByte = reverseBits(m_read(patternAddr)); //But why
 					uint8_t tileByte2 = reverseBits(m_read(patternAddr + 8)); //But why tho?
@@ -429,9 +464,9 @@ namespace nes
 					m_bgShiftRegs[1] = (m_bgShiftRegs[1] & 0x00FF) | (tileByte2 << 8);
 
 					//Load the attribute regs.
-					uint8_t attrX = m_dotCounter / 32;
+					uint8_t attrX = (m_dotCounter+hScroll) / 32;
 					uint8_t attrY = m_scanlineCounter / 32;
-					uint16_t attrAddr = adjust + 0x3C0 + (attrY * 8) + attrX;
+					uint16_t attrAddr = nt * 0x400 + 0x3C0 + (attrY * 8) + attrX;
 					uint8_t quadX = (m_dotCounter / 16) % 2;
 					uint8_t quadY = (m_scanlineCounter / 16) % 2;
 					uint8_t quadrant = ((quadY << 1) | quadX) * 2;
@@ -458,8 +493,11 @@ namespace nes
 					if (m_spriteX[s] > -8)
 					{
 						m_spriteActive[s] = true;
-						m_spriteShiftHi[s] = m_spriteShiftHi[s] >> 1;
-						m_spriteShiftLo[s] = m_spriteShiftLo[s] >> 1;
+						if (m_spriteX[s] != 0) //Cheezy hack. Don't want to shift before the first pixel is read.
+						{
+							m_spriteShiftHi[s] = m_spriteShiftHi[s] >> 1;
+							m_spriteShiftLo[s] = m_spriteShiftLo[s] >> 1;
+						}
 						m_spriteX[s]--;
 					}
 					else
@@ -486,20 +524,27 @@ namespace nes
 						| readbit(m_bgShiftRegs[0], (fineScroll));	
 
 		int sprColorIndex = 0x00;
+		bool sprPri = true;
 		for (int s = 7; s >= 0; --s)
 		{
 			if (!m_spriteActive[s]) continue;
-			uint8_t sprAttr = m_spriteScan[s * 4 + 2] & 0x3; 
-			int thisSprCol = (sprAttr << 2 ) | (readbit(m_spriteShiftHi[s], 0) << 1) | (readbit(m_spriteShiftLo[s], 0));
+			uint8_t sprAttr =( m_oam[m_spriteScanIdx[s] * 4 + 2]) & 0x3; 
+			int thisSprCol =  (sprAttr << 2) | (readbit(m_spriteShiftHi[s], 0) << 1) | (readbit(m_spriteShiftLo[s], 0));
 			if (thisSprCol) sprColorIndex = thisSprCol;
-
+			if ((m_spriteScanIdx[s] == 0) && (sprColorIndex != 0))// && (bgColorIndex != 0))
+			{
+				writebit(m_registers[2], 1, 6);
+			}
+			if(sprColorIndex != 0)
+			sprPri = readbit(m_oam[m_spriteScanIdx[s]], 5);
+			
 		}
-		bool sprPri = readbit(m_spriteScan[0], 5);
+
 
 		int finalColorIndex = 0x00;
-		if ((!sprPri && (sprColorIndex != 0)) || (bgColorIndex == 0))
+		if ((/*!sprPri &&*/ (sprColorIndex != 0)) || (bgColorIndex == 0))
 		{
-			writebit(m_registers[2], 1, 6);
+
 			finalColorIndex = sprColorIndex;
 	
 		}

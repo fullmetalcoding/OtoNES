@@ -186,7 +186,13 @@ int main(int argc, char** argv)
 						machine->getPPU()->debugDumpPatternTable("c:\\codestuffs\\ptdump.raw");
 					}
 					break;
-
+				case 'l':
+				case 'L':
+					if (machine)
+					{
+						machine->getPPU()->debugDumpRawScreen("c:\\codestuffs\\screendump.raw");
+					}
+					break;
 				default:
 					break;
 				}

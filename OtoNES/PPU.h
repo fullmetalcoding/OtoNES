@@ -28,8 +28,8 @@ namespace nes
 		std::shared_ptr<uint8_t[]> m_screen;
 
 		//Sprites...
-		uint8_t m_oam[0xFF];
-		uint8_t m_spriteScan[32];
+		uint8_t m_oam[0xFF]; //Sprite ram (OAM)
+		int m_spriteScanIdx[8]; //Indices of sprites on the current scanline
 		int m_spriteX[8]; //Sprite X countdown for current scanline.
 		uint8_t m_spriteShiftHi[8]; //Sprite bitmap shift reg high bit
 		uint8_t m_spriteShiftLo[8]; //Sprite bitmap shift reg lo bit
@@ -76,6 +76,8 @@ namespace nes
 		void __debugFakeSprite0Hit();
 
 		void debugDumpPatternTable(std::string filename);
+
+		void debugDumpRawScreen(std::string filename);
 
 		void debugDumpNameTable(std::string filename);
 
