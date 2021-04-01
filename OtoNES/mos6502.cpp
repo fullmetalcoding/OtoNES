@@ -912,7 +912,7 @@ void mos6502::Run(uint32_t n)
 {
 	uint32_t start = cycles;
 
-	while (start + n > cycles && !illegalOpcode)
+	while ((uint64_t) start + n > cycles && !illegalOpcode)
 	{
 		if (beginFetch)
 		{

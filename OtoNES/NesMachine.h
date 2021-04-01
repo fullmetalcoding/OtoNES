@@ -8,6 +8,15 @@
 #include <map>
 #include <functional>
 
+#define NES_KEYUP 0
+#define NES_KEYDOWN 1
+#define NES_KEYLEFT 2
+#define NES_KEYRIGHT 3
+#define NES_KEY_A 4
+#define NES_KEY_B 5
+#define NES_KEY_ST 6
+#define NES_KEY_SL 7
+
 namespace nes
 {
 	class NesMachine
@@ -25,15 +34,23 @@ namespace nes
 		std::map<uint8_t, std::function<uint8_t(uint16_t)> > m_sectionReadMap;
 
 		//Memory mapper...
-
-		//Memory access functions...
+				//Memory access functions...
 		void writeInternalRAM(uint16_t address, uint8_t byte);
 		uint8_t readInternalRAM(uint16_t address);
-		void writeMem(uint16_t address, uint8_t byte);
-		uint8_t readMem(uint16_t address);
+
+		unsigned char m_keymap[3];
+		int m_jrladdr;
+		bool m_jwlatch;
+
+
 
 
 	public:
+		void keyDown(int key);
+		void keyUp(int key);
+		void writeMem(uint16_t address, uint8_t byte);
+		uint8_t readMem(uint16_t address);
+
 		NesMachine(std::shared_ptr<mappers::IMapper> cartMap);
 		void reset()
 		{

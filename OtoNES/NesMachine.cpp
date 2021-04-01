@@ -1,6 +1,7 @@
 #include "NesMachine.h"
 
 #include <functional>
+#include "bitmanip.h"
 
 //Internal ram writes are 0000-1FFF, mirrored every 0x800 bytes.
 //$2000-$2007 are PPU regs
@@ -17,6 +18,64 @@
 //Further decode from there.
 namespace nes
 {
+	void NesMachine::keyUp(int key) {
+
+		switch (key) {
+		case NES_KEYUP:
+			clearbit(m_keymap[0], 4);
+			break;
+		case NES_KEYDOWN:
+			clearbit(m_keymap[0], 5);
+			break;
+		case NES_KEYRIGHT:
+			clearbit(m_keymap[0], 7);
+			break;
+		case NES_KEYLEFT:
+			clearbit(m_keymap[0], 6);
+			break;
+		case NES_KEY_A:
+			clearbit(m_keymap[0], 0);
+			break;
+		case NES_KEY_B:
+			clearbit(m_keymap[0], 1);
+			break;
+		case NES_KEY_ST:
+			clearbit(m_keymap[0], 3);
+			break;
+		case NES_KEY_SL:
+			clearbit(m_keymap[0], 2);
+			break;
+		}
+	}
+	void NesMachine::keyDown(int key) {
+
+		switch (key) {
+		case NES_KEYUP:
+			m_keymap[0] = (m_keymap[0] & 0xEF) | 0x10;
+			break;
+		case NES_KEYDOWN:
+			writebit(m_keymap[0], 1, 5);
+			break;
+		case NES_KEYRIGHT:
+			writebit(m_keymap[0], 1, 7);
+			break;
+		case NES_KEYLEFT:
+			writebit(m_keymap[0], 1, 6);
+			break;
+		case NES_KEY_A:
+			writebit(m_keymap[0], 1, 0);
+			break;
+		case NES_KEY_B:
+			writebit(m_keymap[0], 1, 1);
+			break;
+		case NES_KEY_ST:
+			writebit(m_keymap[0], 1, 3);
+			break;
+		case NES_KEY_SL:
+			writebit(m_keymap[0], 1, 2);
+			break;
+		}
+	}
 	using namespace std::placeholders;
 	void NesMachine::writeMem(uint16_t address, uint8_t byte)
 	{
@@ -32,6 +91,10 @@ namespace nes
 					m_ppu->dmaPage(i, readMem(dmaAddr + i));
 				}
 				
+			}
+			else if (address == 0x4016)
+			{
+				m_jrladdr = 0;
 			}
 			return;
 		}
@@ -103,6 +166,22 @@ namespace nes
 	{
 		//std::cout << "READ: " << std::hex << address << std::dec << std::endl;
 		uint8_t sectionReadMask = (address & 0xE000) >> 13; //Should put us in the range of 0-6. 
+		if (address == 0x4016)
+		{
+			//Controller pad read..
+			int jh, jl;
+			jh = (m_jrladdr & 0x18) >> 3;
+			jl = m_jrladdr & 0x0007;
+			m_jrladdr++;
+			if (m_jrladdr > 23) m_jrladdr = 0;
+			uint8_t retByte = readbit(m_keymap[jh], jl);
+			uint8_t sectionWriteMask = (address & 0xE000) >> 13; //Should put us in the range of 0-6. 
+
+			m_sectionWriteMap[sectionWriteMask](address, retByte);
+			return retByte;
+	
+		}
+		
 		return m_sectionReadMap[sectionReadMask](address);
 	}
 

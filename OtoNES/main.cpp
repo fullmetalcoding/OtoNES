@@ -72,7 +72,8 @@ int main(int argc, char** argv)
 	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("1942.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
-	//std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("junkrom.nes");
 
 	std::shared_ptr<nes::NesMachine> machine;
 	if (!rom)
@@ -93,16 +94,25 @@ int main(int argc, char** argv)
 	bool quit = false;
 	Uint32 nextTicks = SDL_GetTicks() + 1000;
 	Uint32 nextFrame = SDL_GetTicks() + 17;
+	Uint32 nextCPUSlice = SDL_GetTicks() + 2; 
+	bool frameEnable = true;
 	while (!quit)
 	{
 		if (machine)
 		{
-			machine->advanceCycles(1);
-			fps++;
+			//Run 2 ms or around 30 scanlines... 
+			if(SDL_TICKS_PASSED(SDL_GetTicks(), nextCPUSlice))
+			{
+				nextCPUSlice = SDL_GetTicks() + 2;
+				machine->advanceCycles(3410);
+				fps += 3410;
+				
+			}	
 			
 		}
-		if (SDL_TICKS_PASSED(SDL_GetTicks(), nextFrame))
+		if (SDL_TICKS_PASSED(SDL_GetTicks(), nextFrame) && frameEnable)
 		{
+			
 			std::shared_ptr<nes::PPU> ppu = machine->getPPU();
 			std::shared_ptr<uint8_t[]> screen = ppu->getScreen();
 			void* screenPix;
@@ -157,6 +167,35 @@ int main(int argc, char** argv)
 						//machine->advanceCycles(1);
 					}
 					break;
+				case 'A':
+				case 'a':
+					if (machine)
+					{
+						machine->keyDown(NES_KEY_A);
+					}
+					break;
+				case 'S':
+				case 's':
+					if (machine)
+					{
+						machine->keyDown(NES_KEY_B);
+					}
+					break;
+				case 'Z':
+				case 'z':
+					if (machine)
+					{
+						machine->keyDown(NES_KEY_ST);
+					}
+					break;
+				case 'x':
+				case 'X':
+					if (machine)
+					{
+						machine->keyDown(NES_KEY_SL);
+					}
+					break;
+
 				case 'N':
 				case 'n':
 					if (machine)
@@ -193,11 +232,103 @@ int main(int argc, char** argv)
 						machine->getPPU()->debugDumpRawScreen("c:\\codestuffs\\screendump.raw");
 					}
 					break;
+				case 'f':
+				case 'F':
+					if (!frameEnable) frameEnable = true;
+					else frameEnable = false; 
+					
+					std::cout << "FRAME ENABLE: " << frameEnable << std::endl;
+					break;
+				case SDLK_UP:
+					if (machine)
+					{
+						machine->keyDown(NES_KEYUP);
+					}
+					break;
+				case SDLK_DOWN:
+					if (machine)
+					{
+						machine->keyDown(NES_KEYDOWN);
+					}
+					break;
+				case SDLK_RIGHT:
+					if (machine)
+					{
+						machine->keyDown(NES_KEYRIGHT);
+					}
+					break;
+				case SDLK_LEFT:
+					if (machine)
+					{
+						machine->keyDown(NES_KEYLEFT);
+					}
+					break;
+
 				default:
 					break;
 				}
 			}
-			
+			else if (e.type == SDL_KEYUP)
+			{
+				switch (e.key.keysym.sym)
+				{
+				case 'A':
+				case 'a':
+					if (machine)
+					{
+						machine->keyUp(NES_KEY_A);
+					}
+					break;
+				case 'S':
+				case 's':
+					if (machine)
+					{
+						machine->keyUp(NES_KEY_B);
+					}
+					break;
+				case 'Z':
+				case 'z':
+					if (machine)
+					{
+						machine->keyUp(NES_KEY_ST);
+					}
+					break;
+				case 'x':
+				case 'X':
+					if (machine)
+					{
+						machine->keyUp(NES_KEY_SL);
+					}
+					break;
+				case SDLK_UP:
+					if (machine)
+					{
+						machine->keyUp(NES_KEYUP);
+					}
+					break;
+				case SDLK_DOWN:
+					if (machine)
+					{
+						machine->keyUp(NES_KEYDOWN);
+					}
+					break;
+				case SDLK_RIGHT:
+					if (machine)
+					{
+						machine->keyUp(NES_KEYRIGHT);
+					}
+					break;
+				case SDLK_LEFT:
+					if (machine)
+					{
+						machine->keyUp(NES_KEYLEFT);
+					}
+					break;
+
+				default:
+					break;
+				}
+			}
 
 		
 		}

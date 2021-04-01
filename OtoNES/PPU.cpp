@@ -108,7 +108,7 @@ namespace nes
 	{
 		uint8_t wrappedAddr = (addr - 0x2000) % 8;
 		uint8_t retVal = m_registers[wrappedAddr];
-		if (wrappedAddr = 0x02)
+		if (wrappedAddr == 0x02)
 		{
 			//Clear vblank flag if we read 0x2002
 			uint8_t reg = retVal;
@@ -171,7 +171,7 @@ namespace nes
 			m_registers[i] = 0;
 
 		}
-		for (size_t i = 0; i < 256; i++)
+		for (size_t i = 0; i < 255; i++)
 		{
 			m_oam[i] = 0;
 		}
@@ -213,12 +213,12 @@ namespace nes
 
 			}
 		}
-		if (m_scanlineCounter == 261)
+		if (m_scanlineCounter == 260)
 		{
 			writebit(m_registers[2], 0, 7);
 			writebit(m_registers[2], 0, 6);
 		}
-		if (m_scanlineCounter > 262)
+		if (m_scanlineCounter > 260)
 		{
 			m_scanlineCounter = -1;
 			writebit(m_registers[2], 0, 5);
@@ -246,7 +246,7 @@ namespace nes
 			if ((m_scanlineCounter >= spriteScanline) && (m_scanlineCounter < (spriteScanline + 8)))
 			{
 				//Found one.
-				m_spriteScanIdx[m_sprCount] = i;
+				m_spriteScanIdx[m_sprCount] = (int)i;
 
 				uint8_t lineOffset = m_scanlineCounter - spriteScanline;
 				if (readbit(m_oam[i * 4 + 2], 7))
@@ -314,7 +314,7 @@ namespace nes
 			for (size_t xPix = 0; xPix < 256; xPix++)
 			{
 				
-				    uint16_t side = xPix / 128;
+				    uint16_t side = (uint16_t)xPix / 128;
 					uint16_t col = (xPix / 8) % 8 ;
 					uint16_t row = line / 8 ;
 					uint16_t fineY = line % 8;
@@ -453,7 +453,7 @@ namespace nes
 					uint16_t adjust = ((tileX > 31) ? nextTableBase : base) + tileAddr;
 
 					int nt = getNameTable(adjust);
-					uint8_t tileRef = m_nameTable[tileAddr + (nt * 0x400)];
+					uint8_t tileRef = m_nameTable[(uint16_t) tileAddr + ((uint16_t)nt * 0x400)];
 
 					uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
 					
