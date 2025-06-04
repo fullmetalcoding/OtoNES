@@ -146,6 +146,7 @@
     <ClInclude Include="Mapper_0.h" />
     <ClInclude Include="Mapper_1.h" />
     <ClInclude Include="Mapper_2.h" />
+    <ClInclude Include="Mapper_4.h" />
     <ClInclude Include="mos6502.h" />
     <ClInclude Include="NesMachine.h" />
     <ClInclude Include="nesPalette.h" />
@@ -157,6 +158,7 @@
     <ClCompile Include="Mapper_0.cpp" />
     <ClCompile Include="Mapper_1.cpp" />
     <ClCompile Include="Mapper_2.cpp" />
+    <ClCompile Include="Mapper_4.cpp" />
     <ClCompile Include="mos6502.cpp" />
     <ClCompile Include="NesMachine.cpp" />
     <ClCompile Include="PPU.cpp" />

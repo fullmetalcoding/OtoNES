@@ -3,6 +3,7 @@
 #include "Mapper_0.h"
 #include "Mapper_1.h"
 #include "Mapper_2.h"
+#include "Mapper_4.h"
 
 
 #include <iostream>
@@ -49,8 +50,8 @@ namespace nes
 		std::static_pointer_cast<mappers::Mapper_1>(retMapper)->m_charBanks = chrBanks;
 		return retMapper;
 	}
-	std::shared_ptr<mappers::IMapper> RomLoader::loadMapper2(uint8_t* temph, uint8_t* header)
-	{
+std::shared_ptr<mappers::IMapper> RomLoader::loadMapper2(uint8_t* temph, uint8_t* header)
+{
 		std::cout << "Loading mapper 2!" << std::endl;
 		std::shared_ptr<mappers::IMapper> retMapper(new mappers::Mapper_2);
 		retMapper->setMirroring(readbit(header[6], 0));
@@ -155,18 +156,21 @@ namespace nes
 		std::cout << "Mapper: " << mappernum <<std::endl;
 
 		std::shared_ptr<mappers::IMapper> retMap;
-		switch (mappernum)
-		{
-		case 0:
-			retMap = loadMapper0(temph, header);
-			break;
-		case 1:
-			retMap = loadMapper1(temph, header);
-			break;
-		case 2:
-			retMap = loadMapper2(temph, header);
-			break;
-		default:
+               switch (mappernum)
+               {
+               case 0:
+                       retMap = loadMapper0(temph, header);
+                       break;
+               case 1:
+                       retMap = loadMapper1(temph, header);
+                       break;
+               case 2:
+                       retMap = loadMapper2(temph, header);
+                       break;
+               case 4:
+                        retMap = loadMapper4(temph, header);
+                        break;
+               default:
 			//UNSUPPORTED MAPPER
 			std::cerr << "UNSUPPORTED MAPPER: " << mappernum << std::endl;
 			
@@ -175,4 +179,54 @@ namespace nes
 		delete temph;
 		return retMap;
 	}
+}
+
+std::shared_ptr<mappers::IMapper> RomLoader::loadMapper4(uint8_t* temph, uint8_t* header)
+{
+                std::cout << "Loading mapper 4!" << std::endl;
+                std::shared_ptr<mappers::IMapper> retMapper(new mappers::Mapper_4);
+                retMapper->setMirroring(readbit(header[6], 0));
+                std::cout << "Mirroring: " << (retMapper->getMirroring() ? "Vertical" : "Horizontal") << std::endl;
+
+                std::vector<std::shared_ptr<uint8_t[]>> progBanks;
+                int num8k = header[4] * 2;
+                for (int i = 0; i < num8k; ++i)
+                {
+                        std::shared_ptr<uint8_t[]> bank(new uint8_t[0x2000]);
+                        for (int j = 0; j < 0x2000; ++j)
+                        {
+                                bank[j] = temph[i * 0x2000 + j];
+                        }
+                        progBanks.push_back(bank);
+                }
+                std::cout << "Loaded: " << progBanks.size() << " 8KB banks." << std::endl;
+
+                std::vector<std::shared_ptr<uint8_t[]>> chrBanks;
+                if (header[5] == 0)
+                {
+                        for (int i = 0; i < 8; ++i)
+                        {
+                                std::shared_ptr<uint8_t[]> bank(new uint8_t[0x400]);
+                                for (int j = 0; j < 0x400; ++j) bank[j] = 0;
+                                chrBanks.push_back(bank);
+                        }
+                        std::static_pointer_cast<mappers::Mapper_4>(retMapper)->m_chrRam = true;
+                }
+                else
+                {
+                        for (int i = 0; i < header[5] * 8; ++i)
+                        {
+                                std::shared_ptr<uint8_t[]> bank(new uint8_t[0x400]);
+                                for (int j = 0; j < 0x400; ++j)
+                                {
+                                        bank[j] = temph[header[4] * 0x4000 + i * 0x400 + j];
+                                }
+                                chrBanks.push_back(bank);
+                        }
+                        std::static_pointer_cast<mappers::Mapper_4>(retMapper)->m_chrRam = false;
+                }
+
+                std::static_pointer_cast<mappers::Mapper_4>(retMapper)->m_progBanks = progBanks;
+                std::static_pointer_cast<mappers::Mapper_4>(retMapper)->m_chrBanks = chrBanks;
+                return retMapper;
 }
