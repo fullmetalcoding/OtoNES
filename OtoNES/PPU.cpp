@@ -84,6 +84,9 @@ namespace nes
 			uint16_t paletteIdx = ptr & 0x001F;
 			m_paletteRAM[paletteIdx] = byte;
 		}
+		else {
+			m_write(m_cpuAccessPtr, byte);
+		}
 		m_cpuAccessPtr +=  (readbit(m_registers[0], 2) ? 32 : 1);
 	}
 	uint8_t PPU::readVRAM()
@@ -256,7 +259,7 @@ namespace nes
 				//Get the sprite's pattern from memory...
 				uint8_t tileRef = m_oam[i * 4 + 1];
 				uint16_t patternAddr = (readbit(m_registers[0], 3) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
-				uint16_t patternAddr2 = patternAddr | 0x0008;
+				uint16_t patternAddr2 = patternAddr + 0x0008;
 				m_spriteShiftHi[m_sprCount] = reverseBits(m_read(patternAddr));
 				m_spriteShiftLo[m_sprCount] = reverseBits(m_read(patternAddr2));
 				if (readbit(m_oam[i * 4 + 2], 6))
@@ -356,6 +359,7 @@ namespace nes
 		{
 			size_t tileY = scanline / 8;
 			int line = scanline % 8;
+			size_t adjustedTileX, adjustedTileY;
 			for (size_t tileX = 0; tileX < 64; tileX++)
 			{
 				
@@ -368,11 +372,12 @@ namespace nes
 				}
 				else
 				{
-					tileX = tileX % 32;
-					pitch = 64;
+					adjustedTileX = tileX % 32;
+					pitch = 32;
 				
 				}
-				int scrolledX = 0 + tileX;
+				
+				int scrolledX = 0 + adjustedTileX;
 				//@TODO: Find and kill this hack.
 				uint16_t yAdjustHack = tileY - (scrolledX > 31 ? 1 : 0);
 				uint16_t tileAddr = (yAdjustHack * pitch) + scrolledX;
@@ -444,11 +449,11 @@ namespace nes
 					else
 					{
 						tileX = (tileX % 32);
-						pitch = 64;
+						pitch = 32;
 					}
+					
 
-
-					uint16_t yAdjustHack = tileY - (tileX > 31 ? 1 : 0);
+					uint16_t yAdjustHack =  tileY - (tileX > 31 ? 1 : 0);
 					uint16_t tileAddr = (yAdjustHack * pitch) + tileX;
 					uint16_t adjust = ((tileX > 31) ? nextTableBase : base) + tileAddr;
 
@@ -458,20 +463,52 @@ namespace nes
 					uint16_t patternAddr = (readbit(m_registers[0], 4) ? 0x1000 : 0x0000) | (tileRef << 4) | (lineOffset & 0x0007);
 					
 
+					//Reversed because the most significant bit is the *right* side of the tile (OLC video)
 					uint8_t tileByte = reverseBits(m_read(patternAddr)); //But why
 					uint8_t tileByte2 = reverseBits(m_read(patternAddr + 8)); //But why tho?
 					m_bgShiftRegs[0] = (m_bgShiftRegs[0] & 0x00FF) | (tileByte << 8);
 					m_bgShiftRegs[1] = (m_bgShiftRegs[1] & 0x00FF) | (tileByte2 << 8);
 
 					//Load the attribute regs.
-					uint8_t attrX = (m_dotCounter+hScroll) / 32;
-					uint8_t attrY = m_scanlineCounter / 32;
-					uint16_t attrAddr = nt * 0x400 + 0x3C0 + (attrY * 8) + attrX;
-					uint8_t quadX = (m_dotCounter / 16) % 2;
-					uint8_t quadY = (m_scanlineCounter / 16) % 2;
+					//This code is AFU. Scrolling immediately breaks everything. 
+					
+					uint8_t attrX = (m_dotCounter ) / 32;
+					uint8_t attrY = (m_scanlineCounter + vScroll) / 32;
+//					if (attrX > 7) std::cout << "WOOPS X: " << (uint16_t) attrX << std::endl;
+//					if (attrY > 7) std::cout << "WOOPS Y: " << (uint16_t) attrY << std::endl;
+					//This is such an ugly kludge. 
+					//if attrX is greater than 7 it means we're in the next
+					//attribute table over... 
+					int ntOffset = 0; 
+					
+					
+					int coarseX = (m_dotCounter) / 4;
+					int coarseY = (m_scanlineCounter ) / 4;
+					//uint16_t attrAddr = (nt << 10) | 0x3c0 | (coarseY << 3) | coarseX;
+					uint16_t attrAddr = ((nt + ntOffset) * 0x0400) + 0x03C0 + (attrY * 8) + attrX;
+					
+					uint8_t attrByte = m_nameTable[attrAddr];
+					
+					/*
+					int coarseX = (m_dotCounter + hScroll) / 4;
+					int coarseY = (m_scanlineCounter + vScroll) / 4;
+					uint16_t attrAddr = (nt << 12) | 0x3c0 | (coarseY << 3) | coarseX;
+					uint8_t quadX = ((m_dotCounter + hScroll) / 16) % 2;
+					uint8_t quadY = ((m_scanlineCounter + vScroll) / 16) % 2;
 					uint8_t quadrant = ((quadY << 1) | quadX) * 2;
 					uint8_t attrByte = m_nameTable[attrAddr];
-					m_bgAttr = ((attrByte >> quadrant) & 0x03);
+					*/
+					int offset = 0; 
+					if (((m_scanlineCounter + vScroll) % 32) > 15)
+					{
+						offset += 4; 
+					}
+					m_attrShiftRegs[0] = (readbit(attrByte, 0+offset) * 0x0F00) | (m_attrShiftRegs[0] & 0xF0FF);
+					m_attrShiftRegs[0] = (readbit(attrByte, 2+offset) * 0xF000) | (m_attrShiftRegs[0] & 0x0FFF);
+					m_attrShiftRegs[1] = (readbit(attrByte, 1+offset) * 0x0F00) | (m_attrShiftRegs[1] & 0xF0FF);
+					m_attrShiftRegs[1] = (readbit(attrByte, 3+offset) * 0xF000) | (m_attrShiftRegs[1] & 0x0FFF);
+					
+
 				}
 				//we're live... Render next pixel...
 				if (m_dotCounter < 256)
@@ -480,6 +517,9 @@ namespace nes
 			//Shift down.
 			m_bgShiftRegs[0] = m_bgShiftRegs[0] >> 1;
 			m_bgShiftRegs[1] = m_bgShiftRegs[1] >> 1;
+			m_attrShiftRegs[0] =  m_attrShiftRegs[0] >> 1;
+			m_attrShiftRegs[1] =  m_attrShiftRegs[1] >> 1;
+			//if (m_sprCount > 7) m_sprCount = 7;
 			for (size_t s = 0; s < m_sprCount; s++)
 			{
 				//Check our sprite X counters...
@@ -518,8 +558,13 @@ namespace nes
 		//Adjust with attribute table.
 		//Check for any sprites on this pixel...
 		uint8_t fineScroll = (hScroll & 0x07);
+		uint8_t fineYScroll = (vScroll & 0x07);
+
+		
 		//Place the pixel in our current backbuffer...
-		int bgColorIndex =  m_bgAttr << 2
+		int bgColorIndex = 
+						  (readbit(m_attrShiftRegs[0], fineScroll) << 3)
+						| (readbit(m_attrShiftRegs[1], fineScroll) << 2)
 						| (readbit(m_bgShiftRegs[1], (fineScroll)) << 1) 
 						| readbit(m_bgShiftRegs[0], (fineScroll));	
 
@@ -528,32 +573,44 @@ namespace nes
 		for (int s = 7; s >= 0; --s)
 		{
 			if (!m_spriteActive[s]) continue;
-			uint8_t sprAttr =( m_oam[m_spriteScanIdx[s] * 4 + 2]) & 0x3; 
-			int thisSprCol =  (sprAttr << 2) | (readbit(m_spriteShiftHi[s], 0) << 1) | (readbit(m_spriteShiftLo[s], 0));
+			uint8_t sprAttr = (m_oam[(m_spriteScanIdx[s] * 4) + 2]) & 0x3;
+			int thisSprCol =  (sprAttr << 2) | (readbit(m_spriteShiftLo[s], 0) << 1) | (readbit(m_spriteShiftHi[s], 0));
 			if (thisSprCol) sprColorIndex = thisSprCol;
-			if ((m_spriteScanIdx[s] == 0) && (sprColorIndex != 0))// && (bgColorIndex != 0))
+			if ((m_spriteScanIdx[s] == 0) && ((sprColorIndex != 0)))// && ((bgColorIndex & 0x3) != 0)))
 			{
 				writebit(m_registers[2], 1, 6);
 			}
 			if(sprColorIndex != 0)
-			sprPri = readbit(m_oam[m_spriteScanIdx[s]], 5);
+			sprPri = readbit(m_oam[m_spriteScanIdx[s]*4 + 2], 5);
+			break;
+			/*
+			if ((!sprPri && (sprColorIndex != 0)) || (bgColorIndex == 0))
+			{
+				//Sprite has priority. it's in the foreground
+				sprColorIndex = (sprColorIndex & 0x0F) | 0x10;
+
+			}
+			else
+			{
+				//Sprite has no priority. it's in the background
+				sprColorIndex = bgColorIndex;
+			}
+			*/
 			
 		}
 
 
-		int finalColorIndex = 0x00;
-		if ((/*!sprPri &&*/ (sprColorIndex != 0)) || (bgColorIndex == 0))
+		int finalColorIndex = bgColorIndex; 
+		
+		if ((!sprPri && (sprColorIndex != 0)) || (bgColorIndex == 0) && ((m_dotCounter > 64) && (m_dotCounter < 241)))
 		{
-
-			finalColorIndex = sprColorIndex;
+			//Sprite has priority. it's in the foreground
+			finalColorIndex = (sprColorIndex & 0x0F) | 0x10;
 	
 		}
-		else
-		{
-			finalColorIndex = bgColorIndex;
-		}
 	
-		//finalColorIndex = sprColorIndex;
+	
+		
 		RGB pixelColor;
 		pixelColor = nes_palette[m_paletteRAM[finalColorIndex]];
 

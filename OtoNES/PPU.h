@@ -35,12 +35,14 @@ namespace nes
 		uint8_t m_spriteShiftHi[8]; //Sprite bitmap shift reg high bit
 		uint8_t m_spriteShiftLo[8]; //Sprite bitmap shift reg lo bit
 		uint8_t m_spriteAttrib[8]; //Sprite attribute number
+		bool m_spriPri[8]; //Priority for sprite on current scanline... 
 		unsigned int m_sprCount; //Count of sprites on current scanline.
 		bool m_spriteActive[8];
 
 		bool m_cpuAccessLatch;
 		
 		uint16_t m_bgShiftRegs[2];
+		uint16_t m_attrShiftRegs[2];
 		uint8_t m_bgAttr;
 		uint16_t m_cpuAccessPtr;
 		uint8_t hScroll; //Horizontal scroll register

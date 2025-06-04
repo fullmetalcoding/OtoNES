@@ -33,7 +33,7 @@ using namespace std;
 #define IF_OVERFLOW() ((status & OVERFLOW) ? true : false)
 #define IF_CONSTANT() ((status & CONSTANT) ? true : false)
 #define IF_BREAK() ((status & BREAK) ? true : false)
-#define IF_DECIMAL() ((status & DECIMAL) ? true : false)
+#define IF_DECIMAL() false//((status & DECIMAL) ? true : false) NES Has BCD mode disabled in the 6502. 
 #define IF_INTERRUPT() ((status & INTERRUPT) ? true : false)
 #define IF_ZERO() ((status & ZERO) ? true : false)
 #define IF_CARRY() ((status & CARRY) ? true : false)

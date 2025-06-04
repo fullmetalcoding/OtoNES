@@ -1,17 +1,145 @@
 //Using SDL, SDL OpenGL, standard IO, and, strings
 #include <SDL.h>
+#include "SDL_syswm.h"
 #include <SDL_ttf.h>
 #if defined(WIN32) | defined(_WIN64)
 #pragma comment(lib, "SDL2.lib")
 #pragma comment(lib, "SDL2main.lib")
 #include <windows.h>
+#include <commdlg.h>
+#include <cderr.h>
+#include <shobjidl.h> 
+#include <atlstr.h>
+#include <shlwapi.h>
 #endif
 
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "NesMachine.h"
 #include "RomLoader.h"
+
+
+std::string loadcart_dialog2(SDL_Window* window)
+{
+	std::cout << "loadcart_dialog2()" << std::endl;
+	std::string filePath; 
+	
+	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
+	if (SDL_GetWindowWMInfo(window, &info) == -1) cout << "Failed on GetWMInfo!\n";
+	std::cout << "Coinit" << std::endl;
+	HRESULT hr = CoInitialize(NULL);// , COINIT_APARTMENTTHREADED |
+		//COINIT_DISABLE_OLE1DDE);
+	std::stringstream streamlinedfile;
+	if (SUCCEEDED(hr))
+	{
+		IFileOpenDialog* pFileOpen;
+
+		// Create the FileOpenDialog object.
+		std::cout << "Cocreate..." << std::endl;
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+		if (SUCCEEDED(hr))
+		{
+			// Show the Open dialog box.
+			std::cout << "Show" << std::endl;
+			hr = pFileOpen->Show(NULL);
+
+			// Get the file name from the dialog box.
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					LPWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+					filePath = CW2A(pszFilePath);
+					std::cout << "GETDISPLAY NAME: " << filePath << std::endl;
+
+					// Display the file name to the user.
+					if (SUCCEEDED(hr))
+					{
+						streamlinedfile << *pszFilePath;
+						CoTaskMemFree(pszFilePath);
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
+	}
+
+
+	return filePath;// streamlinedfile.str();
+}
+std::string loadcart_dialog(SDL_Window* window) {
+	std::cout << "loadcart_dialog()" << std::endl;
+	OPENFILENAME* ofp = new OPENFILENAME();
+	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
+	if (SDL_GetWindowWMInfo(window, &info) == -1) cout << "Failed on GetWMInfo!\n";
+	char filename[500] = { 0 };
+
+
+	/*=== Initialization mess to use open file dialogbox ===*/
+	ofp->lStructSize = sizeof(OPENFILENAME);
+	ofp->hwndOwner = info.info.win.window;
+	ofp->lpstrFilter = "*.nes";
+	ofp->lpstrFile = filename;
+	ofp->nMaxFile = sizeof(filename);
+
+	ofp->lpstrInitialDir = NULL;
+	ofp->lpstrTitle = "Open a rom";
+
+
+
+
+	if (GetOpenFileNameA(ofp)) {
+		delete ofp;
+		return std::string(filename);
+	}
+	else {
+		cout << "getopenfilename failed:\n";
+
+		switch (CommDlgExtendedError()) {
+		case CDERR_DIALOGFAILURE:
+			cout << "Dialog failure.\n";
+			break;
+		case CDERR_FINDRESFAILURE:
+			cout << "Find resource failure. \n";
+			break;
+		case CDERR_NOHINSTANCE:
+			cout << "No Hinstance failure.\n";
+			break;
+		case CDERR_INITIALIZATION:
+			cout << "Init failure.\n";
+			break;
+		case CDERR_NOHOOK:
+			cout << "No hook!\n";
+			break;
+		case CDERR_NOTEMPLATE:
+			cout << "No template\n";
+			break;
+		case CDERR_LOADRESFAILURE:
+			cout << "load resource failure.\n";
+			break;
+		case CDERR_STRUCTSIZE:
+			cout << "Struct size failure";
+			break;
+		default:
+			cout << "Other error!\n";
+			break;
+		}
+		delete ofp;
+		return "";
+	}
+
+}
 
 
 //@TODO: make these configurable.
@@ -60,16 +188,25 @@ int main(int argc, char** argv)
 	int w;
 	int h;
 
-	SDL_QueryTexture(screenTexture, &format, &access, &w, &h);
-	std::cout << "Format: " << format << std::endl
-		<< "access: " << access << std::endl
-		<< "w: " << w << std::endl
-		<< "h: " << h << std::endl;
+	//SDL_QueryTexture(screenTexture, &format, &access, &w, &h);
+//	std::cout << "Format: " << format << std::endl
+	//	<< "access: " << access << std::endl
+	//	<< "w: " << w << std::endl
+	//	<< "h: " << h << std::endl;
 
-	nes::RomLoader loader;
+
 	//@TODO: Need some kind of platform agnostic loader window here... Too bad SDL doesn't
 	//have something like that. :(
-	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("super_mario_bros.nes");
+	std::cout << "Calling cart load dialog..." << std::endl;
+	std::string loadme = loadcart_dialog2(window);
+	std::cout << "LOAD ME: " << loadme << std::endl;
+	nes::RomLoader loader;
+	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom(loadme);
+ //   std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("SMARIO.nes");
+
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Duck_tales.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Black_bass.nes");
+//	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Megaman.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("1942.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("cart.nes");
 //	std::shared_ptr<nes::mappers::IMapper> rom = loader.loadRom("Atomic.nes");
@@ -94,7 +231,7 @@ int main(int argc, char** argv)
 	bool quit = false;
 	Uint32 nextTicks = SDL_GetTicks() + 1000;
 	Uint32 nextFrame = SDL_GetTicks() + 17;
-	Uint32 nextCPUSlice = SDL_GetTicks() + 2; 
+	Uint32 nextCPUSlice = SDL_GetTicks() + 8; 
 	bool frameEnable = true;
 	while (!quit)
 	{
@@ -103,9 +240,13 @@ int main(int argc, char** argv)
 			//Run 2 ms or around 30 scanlines... 
 			if(SDL_TICKS_PASSED(SDL_GetTicks(), nextCPUSlice))
 			{
-				nextCPUSlice = SDL_GetTicks() + 2;
-				machine->advanceCycles(3410);
-				fps += 3410;
+				int late = SDL_GetTicks() - nextCPUSlice; 
+				if (late > 0) {
+					std::cout << "LATE: " << SDL_GetTicks() - nextCPUSlice << std::endl;
+				}
+				nextCPUSlice = SDL_GetTicks() + 8 - late;
+				machine->advanceCycles(13640);
+				fps += 13640;
 				
 			}	
 			
@@ -140,7 +281,7 @@ int main(int argc, char** argv)
 		}
 		if (SDL_TICKS_PASSED(SDL_GetTicks(), nextTicks))
 		{
-			std::cout << "FPS: " << fps << std::endl;
+			std::cout << "FPS: " << std::dec << fps << std::endl;
 			nextTicks = SDL_GetTicks() + 1000;
 			fps = 0;
 		}
@@ -238,6 +379,10 @@ int main(int argc, char** argv)
 					else frameEnable = false; 
 					
 					std::cout << "FRAME ENABLE: " << frameEnable << std::endl;
+					break;
+				case 'r':
+				case 'R':
+					if (machine) machine->reset();
 					break;
 				case SDLK_UP:
 					if (machine)

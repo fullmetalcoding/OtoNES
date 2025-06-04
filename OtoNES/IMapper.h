@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <iostream>
 
 namespace nes
 {
@@ -23,6 +24,7 @@ namespace nes
 			virtual uint8_t readMapper(uint16_t addr) abstract;
 
 			virtual uint8_t ppuRead(uint16_t addr) abstract;
+			virtual void ppuWrite(uint16_t addr, uint8_t byte) { std::cout << "UNHANDLED PPU WRITE: " << std::hex << addr << " : " << (uint16_t) byte << std::dec << std::endl; }
 		};
 	}
 }

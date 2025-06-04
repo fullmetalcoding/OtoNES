@@ -1,12 +1,77 @@
 #include "RomLoader.h"
 
 #include "Mapper_0.h"
+#include "Mapper_1.h"
+#include "Mapper_2.h"
+
 
 #include <iostream>
 #include <fstream>
 #include "bitmanip.h"
+
 namespace nes
 {
+	std::shared_ptr<mappers::IMapper> RomLoader::loadMapper1(uint8_t* temph, uint8_t* header)
+	{
+		std::cout << "Loading mapper 1!" << std::endl;
+		std::shared_ptr<mappers::IMapper> retMapper(new mappers::Mapper_1);
+		retMapper->setMirroring(readbit(header[6], 0));
+		std::cout << "Mirroring: " << (retMapper->getMirroring() ? "Vertical" : "Horizontal") << std::endl;
+		
+		std::vector<std::shared_ptr<uint8_t[]> > progBanks;
+		for (size_t i = 0; i < header[4]; i++)
+		{
+			std::shared_ptr<uint8_t[]> bank(new uint8_t[0x4000]);
+			for (size_t j = 0; j < 0x4000; j++)
+			{
+				bank[j] = temph[i * 0x4000 + j];
+			}
+			progBanks.push_back(bank);
+
+		}
+		std::cout << "Loaded: " << progBanks.size() << " 16KB banks." << std::endl;
+		//Load CHR rom....
+		std::vector<std::shared_ptr<uint8_t[]> > chrBanks;
+		for (size_t i = 0; i < header[5]; i++)
+		{
+			std::shared_ptr<uint8_t[]> bank(new uint8_t[0x2000]);
+			for (size_t j = 0; j < 0x2000; j++)
+			{
+				bank[j] = temph[j + ( 0x2000 * i) + 0x4000 * header[4]];
+			
+			}
+			chrBanks.push_back(bank);
+		}
+
+
+		
+		std::static_pointer_cast<mappers::Mapper_1>(retMapper)->m_progBanks = progBanks;
+		std::static_pointer_cast<mappers::Mapper_1>(retMapper)->m_charBanks = chrBanks;
+		return retMapper;
+	}
+	std::shared_ptr<mappers::IMapper> RomLoader::loadMapper2(uint8_t* temph, uint8_t* header)
+	{
+		std::cout << "Loading mapper 2!" << std::endl;
+		std::shared_ptr<mappers::IMapper> retMapper(new mappers::Mapper_2);
+		retMapper->setMirroring(readbit(header[6], 0));
+		std::cout << "Mirroring: " << (retMapper->getMirroring() ? "Vertical" : "Horizontal") << std::endl;
+
+		std::vector<std::shared_ptr<uint8_t[]> > progBanks;
+		for (size_t i = 0; i < header[4]; i++)
+		{
+			std::shared_ptr<uint8_t[]> bank(new uint8_t[0x4000]);
+			for (size_t j = 0; j < 0x4000; j++)
+			{
+				bank[j] = temph[i * 0x4000 + j];
+			}
+			progBanks.push_back(bank);
+
+		}
+		std::cout << "Loaded: " << progBanks.size() << " 16KB banks." << std::endl;
+
+		std::static_pointer_cast<mappers::Mapper_2>(retMapper)->m_progBanks = progBanks;
+		return retMapper;
+	}
 	std::shared_ptr<mappers::IMapper> RomLoader::loadMapper0(uint8_t* temph, uint8_t * header)
 	{
 		std::shared_ptr<mappers::IMapper> retMapper(new mappers::Mapper_0);
@@ -94,6 +159,12 @@ namespace nes
 		{
 		case 0:
 			retMap = loadMapper0(temph, header);
+			break;
+		case 1:
+			retMap = loadMapper1(temph, header);
+			break;
+		case 2:
+			retMap = loadMapper2(temph, header);
 			break;
 		default:
 			//UNSUPPORTED MAPPER

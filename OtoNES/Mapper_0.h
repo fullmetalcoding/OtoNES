@@ -31,6 +31,7 @@ namespace nes
 			uint8_t readMapper(uint16_t addr) override;
 			void writeMapper(uint16_t addr, uint8_t byte) override;
 			uint8_t ppuRead(uint16_t addr) override;
+			void ppuWrite(uint16_t addr, uint8_t byte) override;
 		};
 	}
 }

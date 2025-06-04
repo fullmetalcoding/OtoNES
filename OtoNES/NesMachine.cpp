@@ -115,6 +115,10 @@ namespace nes
 		so set up the write/read handlers before instantiating the CPU.
 		*/
 		m_internalRAM.reset(new uint8_t[0x800]);
+		for (int i = 0; i < 0x800; i++)
+		{
+			m_internalRAM[i] = 0;
+		}
 		m_sectionWriteMap[0x00] = std::bind(&NesMachine::writeInternalRAM, this, _1, _2);
 		m_sectionWriteMap[0x02] = std::bind(&mappers::IMapper::writeMapper, m_bankMapper, _1, _2);
 		m_sectionWriteMap[0x03] = std::bind(&mappers::IMapper::writeMapper, m_bankMapper, _1, _2);
@@ -142,10 +146,9 @@ namespace nes
 		meh... It's not really any cleaner just to have the map handlers
 		all set up in the same place...
 		*/
-		//@TODO: Replace nullptrs below with mapper access for PPU CHR ROM.
 		m_ppu.reset(new PPU(std::bind(&mos6502::NMI, m_cpu),
 			std::bind(&mappers::IMapper::ppuRead, m_bankMapper, _1),
-			nullptr));
+			std::bind(&mappers::IMapper::ppuWrite, m_bankMapper, _1, _2)));
 		m_ppu->setMirroring(m_bankMapper->getMirroring());
 		m_sectionWriteMap[0x01] = std::bind(&PPU::writePPU, m_ppu, _1, _2);
 		m_sectionReadMap[0x01] = std::bind(&PPU::readPPU, m_ppu,  _1);
@@ -165,7 +168,7 @@ namespace nes
 	uint8_t NesMachine::readMem(uint16_t address)
 	{
 		//std::cout << "READ: " << std::hex << address << std::dec << std::endl;
-		uint8_t sectionReadMask = (address & 0xE000) >> 13; //Should put us in the range of 0-6. 
+		
 		if (address == 0x4016)
 		{
 			//Controller pad read..
@@ -181,7 +184,7 @@ namespace nes
 			return retByte;
 	
 		}
-		
+		uint8_t sectionReadMask = (address & 0xE000) >> 13; //Should put us in the range of 0-6. 
 		return m_sectionReadMap[sectionReadMask](address);
 	}
 

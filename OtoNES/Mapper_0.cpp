@@ -25,5 +25,10 @@ namespace nes
 			//For mapper 0, it doesn't really matter since we only have 2 pattern tables.
 			return m_charBanks[addr];
 		}
+		void Mapper_0::ppuWrite(uint16_t addr, uint8_t byte)
+		{
+			//std::cout << "Unexpected PPU write to: " << std::hex << addr << " data: " << (uint16_t) byte << " just going with it i guess..." << std::endl;
+			//m_charBanks[addr] = byte;
+		}
 	}
 }
