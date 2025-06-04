@@ -42,6 +42,9 @@
     <ClInclude Include="Mapper_2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mapper_4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Mapper_1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,6 +69,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Mapper_2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapper_4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Mapper_1.cpp">
