@@ -86,7 +86,7 @@ namespace nes
 
 				uint16_t dmaAddr = (byte << 8) & 0xFF00;
 				//std::cout << "OAM DMA ACCESS: " << std::hex << dmaAddr << std::dec << std::endl;
-				for (size_t i = 0; i < 0xFF; i++)
+				for (size_t i = 0; i < 0x100; i++)
 				{
 					m_ppu->dmaPage(i, readMem(dmaAddr + i));
 				}
@@ -94,7 +94,16 @@ namespace nes
 			}
 			else if (address == 0x4016)
 			{
-				m_jrladdr = 0;
+				bool old = (m_strobe & 1);
+				bool newbit = byte & 1;
+				if (old && !newbit)
+				{
+					m_ctrlLatch[0] = m_keymap[0];
+					m_ctrlLatch[1] = m_keymap[1];
+					m_jrladdr = 0;
+				}
+				m_strobe = newbit;
+				return;
 			}
 			return;
 		}
@@ -119,6 +128,16 @@ namespace nes
 		{
 			m_internalRAM[i] = 0;
 		}
+		for (int i = 0; i < 3; i++)
+		{
+			m_keymap[i] = 0;
+		}
+		for (int i = 0; i < 2; i++)
+		{
+			m_ctrlLatch[i] = 0;
+		}
+		m_jrladdr = 0;
+		m_strobe = 0;
 		m_sectionWriteMap[0x00] = std::bind(&NesMachine::writeInternalRAM, this, _1, _2);
 		m_sectionWriteMap[0x02] = std::bind(&mappers::IMapper::writeMapper, m_bankMapper, _1, _2);
 		m_sectionWriteMap[0x03] = std::bind(&mappers::IMapper::writeMapper, m_bankMapper, _1, _2);

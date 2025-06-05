@@ -39,8 +39,9 @@ namespace nes
 		uint8_t readInternalRAM(uint16_t address);
 
 		unsigned char m_keymap[3];
+		uint8_t m_ctrlLatch[2];
 		int m_jrladdr;
-		bool m_jwlatch;
+		bool m_strobe;
 
 
 

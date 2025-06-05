@@ -29,7 +29,8 @@ namespace nes
 		std::shared_ptr<uint8_t[]> m_screen;
 
 		//Sprites...
-		uint8_t m_oam[0xFF]; //Sprite ram (OAM)
+		uint8_t m_oam[0x100]; //Sprite ram (OAM)
+		uint8_t m_oamAddr;    //Current OAM address
 		int m_spriteScanIdx[8]; //Indices of sprites on the current scanline
 		int m_spriteX[8]; //Sprite X countdown for current scanline.
 		uint8_t m_spriteShiftHi[8]; //Sprite bitmap shift reg high bit
@@ -40,6 +41,7 @@ namespace nes
 		bool m_spriteActive[8];
 
 		bool m_cpuAccessLatch;
+		uint8_t m_vramReadBuffer;
 		
 		uint16_t m_bgShiftRegs[2];
 		uint16_t m_attrShiftRegs[2];

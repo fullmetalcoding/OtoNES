@@ -52,17 +52,15 @@ uint8_t nes::mappers::Mapper_1::getPrgBankMode()
 void nes::mappers::Mapper_1::writeMapper(uint16_t addr, uint8_t byte)
 {
 	//First check if we're resetting the shift register...
-	if ((byte & 0x80) != 0) {
-		//RESET.
-		m_shiftReg = 0; 
+	if (byte & 0x80) {
+		m_shiftReg = 0x10;
 		m_shiftCount = 0;
+		m_ctrlReg |= 0x0C; //reset PRG mode
 		return;
 	}
-	uint8_t bit = byte & 0x1;
-	m_shiftReg = m_shiftReg << 1; 
-	m_shiftReg = m_shiftReg | bit;
-	m_shiftCount++; 
-	if (m_shiftCount == 5)
+	m_shiftReg >>= 1;
+	m_shiftReg |= (byte & 1) << 4;
+	if (++m_shiftCount == 5)
 	{
 		//LATCH!
 		//Last address write controls where the shift reg goes...
@@ -91,7 +89,7 @@ void nes::mappers::Mapper_1::writeMapper(uint16_t addr, uint8_t byte)
 			m_prgBankSel = m_shiftReg & mask;
 		}
 		m_shiftCount = 0; 
-		m_shiftReg = 0; 
+		m_shiftReg = 0x10; 
 
 	}
 
@@ -99,35 +97,38 @@ void nes::mappers::Mapper_1::writeMapper(uint16_t addr, uint8_t byte)
 
 uint8_t nes::mappers::Mapper_1::ppuRead(uint16_t addr)
 {
-	//std::cout << "MMC1 PPU READ: " << std::hex << addr << std::dec << std::endl;
-	if ((m_ctrlReg & 0x10) != 0)
+	bool fourKB = (m_ctrlReg & 0x10) != 0;
+	uint16_t offset = addr & 0x0FFF;
+	if (fourKB)
 	{
-		//Switch separate 4KB banks
-		if (addr < 0x1000)
-		{
-			//lobank
-			return m_progBanks[m_chrLoBankSel][addr];
-		}
-		else
-		{
-			//hibank
-			return m_progBanks[m_chrLoBankSel][addr - 0x1000];
-		}
+		uint8_t bank = (addr < 0x1000) ? m_chrLoBankSel : m_chrHiBankSel;
+		bank %= m_charBanks.size();
+		return m_charBanks[bank][offset];
 	}
 	else
 	{
-		uint8_t maskedBankSel = m_chrLoBankSel & 0x1E;
-		//Switch 8KB at a time
-		if (addr < 0x1000)
-		{
-			//lobanksel 
-			return m_progBanks[maskedBankSel][addr];
-		}
-		else
-		{
-			//lobanksel + 1
-			return m_progBanks[maskedBankSel + 1][addr - 0x1000];
-		}
+		uint8_t base = m_chrLoBankSel & 0x1E;
+		uint8_t bank = (addr < 0x1000) ? base : base + 1;
+		bank %= m_charBanks.size();
+		return m_charBanks[bank][offset];
 	}
-	return 0;
+}
+void nes::mappers::Mapper_1::ppuWrite(uint16_t addr, uint8_t byte)
+{
+	if (!m_chrRam) return;
+	bool fourKB = (m_ctrlReg & 0x10) != 0;
+	uint16_t offset = addr & 0x0FFF;
+	if (fourKB)
+	{
+		uint8_t bank = (addr < 0x1000) ? m_chrLoBankSel : m_chrHiBankSel;
+		bank %= m_charBanks.size();
+		m_charBanks[bank][offset] = byte;
+	}
+	else
+	{
+		uint8_t base = m_chrLoBankSel & 0x1E;
+		uint8_t bank = (addr < 0x1000) ? base : base + 1;
+		bank %= m_charBanks.size();
+		m_charBanks[bank][offset] = byte;
+	}
 }

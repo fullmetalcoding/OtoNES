@@ -23,6 +23,7 @@ namespace nes {
 
 			uint8_t m_shiftReg;
 			uint8_t m_shiftCount; 
+			bool m_chrRam;
 
 			friend class RomLoader;
 
@@ -31,7 +32,10 @@ namespace nes {
 				m_prgBankSel(0),
 				m_chrLoBankSel(0),
 				m_chrHiBankSel(0),
-				m_ctrlReg(0x06)
+				m_ctrlReg(0x0C),
+				m_shiftReg(0x10),
+				m_chrRam(false),
+				m_shiftCount(0)
 			{
 				
 				
@@ -40,6 +44,7 @@ namespace nes {
 			uint8_t getPrgBankMode();
 			void writeMapper(uint16_t addr, uint8_t byte) override;
 			uint8_t ppuRead(uint16_t addr) override;
+			void ppuWrite(uint16_t addr, uint8_t byte) override;
 			
 		};
 	}

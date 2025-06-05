@@ -233,21 +233,23 @@ int main(int argc, char** argv)
 	Uint32 nextFrame = SDL_GetTicks() + 17;
 	Uint32 nextCPUSlice = SDL_GetTicks() + 8; 
 	bool frameEnable = true;
+	uint64_t last = SDL_GetPerformanceCounter();
+	const double cpuFreq = 1789773.0; // NES NTSC CPU frequency
 	while (!quit)
 	{
 		if (machine)
 		{
+			uint64_t now = SDL_GetPerformanceCounter();
+			double deltaSec =
+				((double)(now - last) )/ static_cast<double>(SDL_GetPerformanceFrequency());
+			last = now;
+
+			uint64_t cyclesToRun = deltaSec * cpuFreq;
 			//Run 2 ms or around 30 scanlines... 
-			if(SDL_TICKS_PASSED(SDL_GetTicks(), nextCPUSlice))
+			if(cyclesToRun > 0)
 			{
-				int late = SDL_GetTicks() - nextCPUSlice; 
-				if (late > 0) {
-					std::cout << "LATE: " << SDL_GetTicks() - nextCPUSlice << std::endl;
-				}
-				nextCPUSlice = SDL_GetTicks() + 8 - late;
-				machine->advanceCycles(13640);
-				fps += 13640;
 				
+				machine->advanceCycles(cyclesToRun);
 			}	
 			
 		}

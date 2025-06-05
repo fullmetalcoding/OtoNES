@@ -43,32 +43,34 @@ namespace nes
 	}
 	void PPU::writeVRAM(uint8_t byte)
 	{
+		uint16_t addr = m_cpuAccessPtr & 0x3FFF;
 		//Prevent writes to CHRROM since it's ROM...
 		//Though this will need to be flexible in the future, some mappers allow writing
 		//to chr "ROM"
-		if ((m_cpuAccessPtr >= 0x3000) && (m_cpuAccessPtr < 0x3F00))
+		if ((addr >= 0x3000) && (addr < 0x3F00))
 		{
 			//Handle mirroring name tables. 
-			clearbit(m_cpuAccessPtr, 13);
+			clearbit(addr, 12);
 		}
-		if ((m_cpuAccessPtr >= 0x2000) && (m_cpuAccessPtr < 0x3000))
+		if ((addr >= 0x2000) && (addr < 0x3000))
 		{
 
 			//Look to cpuAccessPtr, as this is where we want to write.
 			//Figure out where the pointer is in our internal nametables (handle mirroring)
-			int nameTable = getNameTable(m_cpuAccessPtr);
+			int nameTable = getNameTable(addr);
 			//std::cout << nameTable << ".";
 			//Now we know which nametable we're in, we need to make sure the address is less than 0x400
 			//To do this, chop off the top 6 bits. 
-			uint16_t nametableAddr = (m_cpuAccessPtr & 0x03FF);
+			uint16_t nametableAddr = (addr & 0x03FF);
 			//Now add to the nametableAddr to handle mirroring.
 
-			nametableAddr += nameTable *  0x400;
+			nametableAddr += nameTable * 0x400;
 			//Update memory
 			m_nameTable[nametableAddr] = byte;
-			//Increment cpuAccessPTR
+			//Increment cpuAccessPTR|
+			addr++;
 		}
-		else if((m_cpuAccessPtr >= 0x3F00) && (m_cpuAccessPtr < 0x4000))
+		else if((addr >= 0x3F00) && (addr < 0x4000))
 		{
 			//Palette RAM write. With mirroring we only care about the lower 5 bits.
 			//Only the first part of each 4 addresses is mirrored, not the rest...
@@ -85,26 +87,44 @@ namespace nes
 			m_paletteRAM[paletteIdx] = byte;
 		}
 		else {
-			m_write(m_cpuAccessPtr, byte);
+			m_write(addr, byte);
 		}
 		m_cpuAccessPtr +=  (readbit(m_registers[0], 2) ? 32 : 1);
 	}
+	
 	uint8_t PPU::readVRAM()
 	{
-		//Look to cpuAccessPtr, as this is where we want to read
-		//Figure out where the pointer is in our internal nametables (handle mirroring)
-		int nameTable = getNameTable(m_cpuAccessPtr);
-		//Now we know which nametable we're in, we need to make sure the address is less than 0x400
-		//To do this, chop off the top 6 bits.
-		uint16_t nametableAddr = (m_cpuAccessPtr & 0x03FF);
-		//Now add to the nametableAddr to handle mirroring.
-		if (nameTable > 0)
-			nametableAddr += 0x400;
-		
-		//Read memory
-		uint8_t fetch = m_nameTable[nametableAddr];
-		//Increment cpuAccessPTR
-		m_cpuAccessPtr++;
+		uint16_t addr = m_cpuAccessPtr & 0x3FFF;
+		if ((addr >= 0x3000) && (addr < 0x3F00))
+		{
+			addr -= 0x1000; //Mirror of $2000-$2EFF
+		}
+
+		uint8_t fetch = 0;
+		if (addr < 0x2000)
+		{
+			fetch = m_read(addr);
+		}
+		else if (addr < 0x3F00)
+		{
+			int nameTable = getNameTable(addr);
+			uint16_t nametableAddr = (addr & 0x03FF) + (nameTable * 0x400);
+			fetch = m_nameTable[nametableAddr];
+		}
+		else if (addr < 0x4000)
+		{
+			uint16_t ptr = addr;
+			bool weirdMirror = (ptr == 0x3F10) || (ptr == 0x3F14) || (ptr == 0x3F18) || (ptr == 0x3F1C);
+			if (weirdMirror) ptr &= 0xFFEF;
+			uint16_t paletteIdx = ptr & 0x001F;
+			fetch = m_paletteRAM[paletteIdx];
+		}
+		else
+		{
+			fetch = m_read(addr);
+		}
+
+		m_cpuAccessPtr += (readbit(m_registers[0], 2) ? 32 : 1);
 		return fetch;
 	}
 	uint8_t PPU::readPPU(uint16_t addr)
@@ -121,6 +141,47 @@ namespace nes
 		}
 		return retVal;
 	}
+	/*
+	
+	uint8_t PPU::readPPU(uint16_t addr)
+	{
+		uint8_t wrappedAddr = (addr - 0x2000) % 8;
+		switch (addr)
+		{
+		case 0x2002:
+		{
+			uint8_t reg = m_registers[2];
+			clearbit(reg, 7);
+			m_cpuAccessLatch = false;
+			m_registers[2] = reg;
+			return m_registers[2];
+		}
+		case 0x2004:
+		{
+			uint8_t val = m_oam[m_oamAddr];
+			m_oamAddr = (m_oamAddr + 1) & 0xFF;
+			return val;
+		}
+		case 0x2007:
+		{
+			uint8_t retVal;
+			if ((m_cpuAccessPtr >= 0x3F00) && (m_cpuAccessPtr < 0x4000))
+			{
+				retVal = readVRAM();
+				m_vramReadBuffer = retVal;
+			}
+			else
+			{
+				retVal = m_vramReadBuffer;
+				m_vramReadBuffer = readVRAM();
+			}
+			return retVal;
+		}
+		default:
+			return m_registers[wrappedAddr];
+		}
+	}
+	*/
 	void PPU::writePPU(uint16_t addr, uint8_t byte)
 	{
 
@@ -128,6 +189,15 @@ namespace nes
 		m_registers[wrappedAddr] = byte;
 		switch (addr)
 		{
+		case 0x2003:
+			//std::cout << "OAM WRITE!\n";
+			m_oamAddr = byte;
+			break;
+		case 0x2004:
+			//std::cout << "OAM POKE $2004!\n";
+			m_oam[m_oamAddr] = byte;
+			m_oamAddr =  (m_oamAddr + 1) & 0xFF;
+			break;
 		case 0x2005:
 			if (m_cpuAccessLatch)
 			{
@@ -174,10 +244,12 @@ namespace nes
 			m_registers[i] = 0;
 
 		}
-		for (size_t i = 0; i < 255; i++)
+		for (size_t i = 0; i < 0x100; i++)
 		{
 			m_oam[i] = 0;
 		}
+		m_oamAddr = 0; 
+		m_vramReadBuffer = 0;
 
 		writebit(m_registers[2], 1, 7);
 		writebit(m_registers[2], 1, 5);
@@ -302,6 +374,8 @@ namespace nes
 		m_backBuffer = m_screenBuf1;
 		m_nameTable.reset(new uint8_t[0x800]);
 		m_paletteRAM.reset(new uint8_t[0x20]);
+		m_oamAddr = 0;
+		m_vramReadBuffer = 0;
 
 	}
 	void PPU::__debugFakeSprite0Hit()
